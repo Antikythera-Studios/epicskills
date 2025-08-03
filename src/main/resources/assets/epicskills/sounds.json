@@ -1,0 +1,22 @@
+{
+    "ui.hover": {
+        "category": "master",
+        "subtitle": "ui.hover",
+        "sounds": [
+        	{
+        		"name":"epicskills:ui/hover",
+        		"stream":false
+        	}
+        ]
+    },
+    "ui.gain_ability_points": {
+        "category": "master",
+        "subtitle": "ui.gain_ability_points",
+        "sounds": [
+        	{
+        		"name":"epicskills:ui/gain_ability_points",
+        		"stream":false
+        	}
+        ]
+    }
+}

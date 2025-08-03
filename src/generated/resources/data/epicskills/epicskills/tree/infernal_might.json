@@ -1,0 +1,14 @@
+{
+  "conditions": {
+    "location": {
+      "dimension": "minecraft:the_nether"
+    }
+  },
+  "hidden": false,
+  "locked": true,
+  "menu_color": [
+    81,
+    0,
+    1
+  ]
+}
