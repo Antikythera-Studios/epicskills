@@ -1,0 +1,63 @@
+{
+  "nodes": [
+    {
+      "ability_points": 1,
+      "hidden": false,
+      "position_in_screen": [
+        40,
+        30
+      ],
+      "skill": "epicfight:stamina_pillager"
+    },
+    {
+      "ability_points": 2,
+      "hidden": false,
+      "parents": [
+        {
+          "skill": "epicfight:stamina_pillager"
+        }
+      ],
+      "position_in_screen": [
+        40,
+        110
+      ],
+      "skill": "epicfight:death_harvest"
+    },
+    {
+      "ability_points": 2,
+      "hidden": false,
+      "position_in_screen": [
+        120,
+        30
+      ],
+      "skill": "epicfight:forbidden_strength"
+    },
+    {
+      "ability_points": 1,
+      "hidden": false,
+      "import": "epicskills:battleborn",
+      "position_in_screen": [
+        180,
+        30
+      ],
+      "skill": "epicfight:endurance"
+    },
+    {
+      "ability_points": 3,
+      "hidden": false,
+      "parents": [
+        {
+          "skill": "epicfight:forbidden_strength"
+        },
+        {
+          "skill": "epicfight:endurance"
+        }
+      ],
+      "position_in_screen": [
+        150,
+        110
+      ],
+      "skill": "epicfight:adaptive_skin"
+    }
+  ]
+}

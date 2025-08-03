@@ -1,0 +1,328 @@
+{
+  "nodes": [
+    {
+      "ability_points": 1,
+      "hidden": false,
+      "position_in_screen": [
+        20,
+        30
+      ],
+      "skill": "epicfight:roll"
+    },
+    {
+      "ability_points": 5,
+      "hidden": false,
+      "parents": [
+        {
+          "skill": "epicfight:roll"
+        }
+      ],
+      "position_in_screen": [
+        20,
+        280
+      ],
+      "skill": "epicfight:phantom_ascent"
+    },
+    {
+      "ability_points": 1,
+      "hidden": false,
+      "position_in_screen": [
+        110,
+        30
+      ],
+      "skill": "epicfight:step"
+    },
+    {
+      "ability_points": 2,
+      "hidden": false,
+      "parents": [
+        {
+          "skill": "epicfight:step"
+        }
+      ],
+      "position_in_screen": [
+        110,
+        130
+      ],
+      "skill": "epicfight:technician"
+    },
+    {
+      "ability_points": 4,
+      "hidden": false,
+      "parents": [
+        {
+          "control_points": [
+            [
+              20,
+              210
+            ]
+          ],
+          "skill": "epicfight:roll"
+        },
+        {
+          "control_points": [
+            [
+              65,
+              130
+            ]
+          ],
+          "skill": "epicfight:technician"
+        }
+      ],
+      "position_in_screen": [
+        65,
+        210
+      ],
+      "skill": "epicfight:emergency_escape"
+    },
+    {
+      "ability_points": 2,
+      "hidden": false,
+      "position_in_screen": [
+        200,
+        130
+      ],
+      "skill": "epicfight:vengeance"
+    },
+    {
+      "ability_points": 3,
+      "hidden": false,
+      "parents": [
+        {
+          "control_points": [
+            [
+              155,
+              130
+            ]
+          ],
+          "skill": "epicfight:vengeance"
+        },
+        {
+          "control_points": [
+            [
+              155,
+              130
+            ]
+          ],
+          "skill": "epicfight:technician"
+        }
+      ],
+      "position_in_screen": [
+        155,
+        210
+      ],
+      "skill": "epicfight:catharsis"
+    },
+    {
+      "ability_points": 1,
+      "hidden": false,
+      "position_in_screen": [
+        240,
+        30
+      ],
+      "skill": "epicfight:swordmaster"
+    },
+    {
+      "ability_points": 1,
+      "hidden": false,
+      "position_in_screen": [
+        300,
+        30
+      ],
+      "skill": "epicfight:guard"
+    },
+    {
+      "ability_points": 3,
+      "hidden": false,
+      "parents": [
+        {
+          "skill": "epicfight:swordmaster"
+        },
+        {
+          "skill": "epicfight:guard"
+        }
+      ],
+      "position_in_screen": [
+        270,
+        130
+      ],
+      "skill": "epicfight:parrying"
+    },
+    {
+      "ability_points": 6,
+      "hidden": false,
+      "parents": [
+        {
+          "control_points": [
+            [
+              110,
+              280
+            ],
+            [
+              190,
+              280
+            ]
+          ],
+          "skill": "epicfight:technician"
+        },
+        {
+          "control_points": [
+            [
+              270,
+              280
+            ],
+            [
+              190,
+              280
+            ]
+          ],
+          "skill": "epicfight:parrying"
+        }
+      ],
+      "position_in_screen": [
+        190,
+        330
+      ],
+      "skill": "epicfight:revelation"
+    },
+    {
+      "ability_points": 1,
+      "hidden": false,
+      "position_in_screen": [
+        360,
+        30
+      ],
+      "skill": "epicfight:berserker"
+    },
+    {
+      "ability_points": 1,
+      "hidden": false,
+      "position_in_screen": [
+        420,
+        30
+      ],
+      "skill": "epicfight:adrenaline_fiend"
+    },
+    {
+      "ability_points": 2,
+      "hidden": false,
+      "parents": [
+        {
+          "skill": "epicfight:guard"
+        },
+        {
+          "skill": "epicfight:berserker"
+        }
+      ],
+      "position_in_screen": [
+        330,
+        130
+      ],
+      "skill": "epicfight:endurance"
+    },
+    {
+      "ability_points": 3,
+      "hidden": false,
+      "parents": [
+        {
+          "skill": "epicfight:endurance"
+        }
+      ],
+      "position_in_screen": [
+        330,
+        230
+      ],
+      "skill": "epicfight:impact_guard"
+    },
+    {
+      "ability_points": 3,
+      "hidden": false,
+      "parents": [
+        {
+          "skill": "epicfight:berserker"
+        },
+        {
+          "skill": "epicfight:adrenaline_fiend"
+        }
+      ],
+      "position_in_screen": [
+        390,
+        130
+      ],
+      "skill": "epicfight:hypervitality"
+    },
+    {
+      "ability_points": 5,
+      "hidden": false,
+      "parents": [
+        {
+          "skill": "epicfight:hypervitality"
+        }
+      ],
+      "position_in_screen": [
+        390,
+        230
+      ],
+      "skill": "epicfight:demolition_leap"
+    },
+    {
+      "ability_points": 3,
+      "hidden": false,
+      "parents": [
+        {
+          "skill": "epicfight:hypervitality"
+        }
+      ],
+      "position_in_screen": [
+        450,
+        230
+      ],
+      "skill": "epicfight:bonebreaker"
+    },
+    {
+      "ability_points": 6,
+      "conditions": {
+        "type_specific": {
+          "type": "player",
+          "stats": [
+            {
+              "type": "minecraft:killed",
+              "stat": "minecraft:ender_dragon",
+              "value": {
+                "min": 1
+              }
+            }
+          ]
+        }
+      },
+      "custom_condition": false,
+      "hidden": false,
+      "parents": [
+        {
+          "control_points": [
+            [
+              330,
+              330
+            ]
+          ],
+          "skill": "epicfight:impact_guard"
+        },
+        {
+          "control_points": [
+            [
+              390,
+              330
+            ]
+          ],
+          "skill": "epicfight:demolition_leap"
+        }
+      ],
+      "position_in_screen": [
+        360,
+        330
+      ],
+      "skill": "epicfight:meteor_slam",
+      "unlock_tip": "unlock_tip.epicskills.battleborn.meteor_slam"
+    }
+  ]
+}
