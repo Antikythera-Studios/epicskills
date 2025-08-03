@@ -10,10 +10,10 @@ import com.yesman.epicskills.client.gui.screen.SkillTreeScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.player.LocalPlayer;
-import yesman.epicfight.client.events.engine.ControllEngine;
+import yesman.epicfight.client.events.engine.ControlEngine;
 import yesman.epicfight.client.world.capabilites.entitypatch.player.LocalPlayerPatch;
 
-@Mixin(value = ControllEngine.class)
+@Mixin(value = ControlEngine.class)
 public class MixinControllEngine {
 	@Shadow
 	private LocalPlayer player;

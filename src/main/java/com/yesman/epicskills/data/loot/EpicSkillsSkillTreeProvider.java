@@ -55,7 +55,7 @@ public class EpicSkillsSkillTreeProvider extends SkillTreeProvider {
 					.position(200, 130)
 					.abilityPointsRequirement(2)
 				.done()
-				.newNode(EpicFightSkills.BLOODLUST)
+				.newNode(EpicFightSkills.CATHARSIS)
 					.addParent(EpicFightSkills.VENGEANCE, new Vec2i(155, 130))
 					.addParent(EpicFightSkills.TECHNICIAN, new Vec2i(155, 130))
 					.position(155, 210)
