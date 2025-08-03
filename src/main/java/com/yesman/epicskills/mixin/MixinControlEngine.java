@@ -14,12 +14,12 @@ import yesman.epicfight.client.events.engine.ControlEngine;
 import yesman.epicfight.client.world.capabilites.entitypatch.player.LocalPlayerPatch;
 
 @Mixin(value = ControlEngine.class)
-public class MixinControllEngine {
-	@Shadow
+public class MixinControlEngine {
+	@Shadow(remap = false)
 	private LocalPlayer player;
 	
-	@Shadow
-	private LocalPlayerPatch playerpatch;
+	@Shadow(remap = false)
+	private LocalPlayerPatch playerPatch;
 	
 	@Redirect(
 		at = @At(
@@ -30,7 +30,7 @@ public class MixinControllEngine {
 		method = "handleEpicFightKeyMappings()V"
 	)
 	public void epicskills$handleEpicFightKeyMappings(Minecraft minecraft, Screen screen) {
-		SkillTreeScreen skilltreescreen = new SkillTreeScreen(this.playerpatch);
+		SkillTreeScreen skilltreescreen = new SkillTreeScreen(this.playerPatch);
 		
 		if (!skilltreescreen.discarded()) {
 			minecraft.setScreen(skilltreescreen);
