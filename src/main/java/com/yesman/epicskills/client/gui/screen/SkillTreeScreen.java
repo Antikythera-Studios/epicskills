@@ -811,9 +811,11 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
 							.normal(xDiff, yDiff, 0.0F)
 						.endVertex();
 						
+						RenderSystem.disableCull();
 						RenderSystem.lineWidth(2.0F * (float)Minecraft.getInstance().getWindow().getGuiScale());
 						RenderSystem.setShader(GameRenderer::getRendertypeLinesShader);
 						BufferUploader.drawWithShader(bufferBuilder.end());
+						RenderSystem.enableCull();
 					}
 					
 					if (unlocked) {
