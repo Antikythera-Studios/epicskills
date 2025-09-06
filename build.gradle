@@ -85,7 +85,7 @@ mixin {
 dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
 	
-    implementation fg.deobf("curse.maven:epic-fight-mod-405076:6866182")
+    implementation fg.deobf("curse.maven:epic-fight-mod-405076:6968125")
     
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 }
