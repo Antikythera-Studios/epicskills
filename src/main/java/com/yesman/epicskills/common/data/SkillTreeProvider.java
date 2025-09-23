@@ -70,6 +70,8 @@ public abstract class SkillTreeProvider implements DataProvider {
 		Vec3i menuBarColor = new Vec3i(255, 255, 255);
 		@Nullable
 		EntityPredicate conditions = null;
+		@Nullable
+		String unlockTipTranslationKey;
 		boolean locked = false;
 		boolean hiddenWhenLocked = false;
 		
@@ -91,6 +93,8 @@ public abstract class SkillTreeProvider implements DataProvider {
 			if (this.conditions != null) {
 				jsonObject.add("conditions", this.conditions.serializeToJson());
 			}
+			
+			if (this.unlockTipTranslationKey != null) jsonObject.addProperty("unlock_tip", this.unlockTipTranslationKey);
 			
 			return jsonObject;
 		}
@@ -167,6 +171,14 @@ public abstract class SkillTreeProvider implements DataProvider {
 		public SkillTreePageBuilder setLocked(EntityPredicate entityPredicate) {
 			this.conditions = entityPredicate;
 			this.locked = true;
+			return this;
+		}
+		
+		/**
+		 * A .lang key to give a hint to unlock this node
+		 */
+		public SkillTreePageBuilder unlockTipTranslationKey(String unlockTipTranslationKey) {
+			this.unlockTipTranslationKey = unlockTipTranslationKey;
 			return this;
 		}
 		

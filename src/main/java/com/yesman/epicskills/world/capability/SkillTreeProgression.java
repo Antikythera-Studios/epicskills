@@ -1,6 +1,5 @@
 package com.yesman.epicskills.world.capability;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -9,7 +8,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Queue;
 
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.jetbrains.annotations.NotNull;
@@ -21,8 +19,8 @@ import com.yesman.epicskills.client.gui.components.toasts.SkillTreeNodeToast;
 import com.yesman.epicskills.client.gui.components.toasts.SkillTreeToast;
 import com.yesman.epicskills.client.gui.screen.SkillInfoScreen;
 import com.yesman.epicskills.network.NetworkManager;
+import com.yesman.epicskills.network.client.ClientBoundSetTreeState;
 import com.yesman.epicskills.network.client.ClientBoundUnlockNode;
-import com.yesman.epicskills.network.client.ClientBoundUnlockTree;
 import com.yesman.epicskills.skilltree.SkillTree;
 import com.yesman.epicskills.skilltree.SkillTreeEntry;
 import com.yesman.epicskills.skilltree.SkillTreeEntry.Node;
@@ -68,9 +66,7 @@ public class SkillTreeProgression {
 	private final Map<Holder.Reference<SkillTree>, TreeState> treeStates = new HashMap<> ();
 	private final Map<Holder.Reference<SkillTree>, Map<Skill, TopDownTreeNode>> nodes = new HashMap<> ();
 	private final Map<Holder.Reference<SkillTree>, Map<Skill, TopDownTreeNode>> rootNodes = new HashMap<> ();
-	
 	private final List<Pair<Holder.Reference<SkillTree>, TopDownTreeNode>> unlockAwaitingNodes = new LinkedList<> ();
-	private final Queue<Pair<Holder.Reference<SkillTree>, TreeState>> dirty = new ArrayDeque<> ();
 	
 	private final Player player;
 	
@@ -93,7 +89,6 @@ public class SkillTreeProgression {
 		this.nodes.clear();
 		this.rootNodes.clear();
 		this.unlockAwaitingNodes.clear();
-		this.dirty.clear();
 		
 		HolderLookup<SkillTree> skillTreeRegistry = this.registryAccess.lookupOrThrow(SkillTree.SKILL_TREE_REGISTRY_KEY);
 		
@@ -202,7 +197,8 @@ public class SkillTreeProgression {
 		this.treeStates.forEach((tree, state) -> {
 			if (state == TreeState.LOCKED && !tree.get().noUnlcokConditions()) {
 				if (tree.get().conditions().matches(serverplayer, serverplayer)) {
-					this.dirty.add(Pair.of(tree, TreeState.UNLOCKED));
+					this.treeStates.put(tree, TreeState.UNLOCKED);
+					NetworkManager.sendToPlayer(new ClientBoundSetTreeState(tree.key(), TreeState.UNLOCKED, false), serverplayer);
 				}
 			}
 		});
@@ -217,14 +213,62 @@ public class SkillTreeProgression {
 			
 			return meets;
 		});
+	}
+	
+	public void unlockTree(ResourceLocation id) {
+		ResourceKey<SkillTree> rk = ResourceKey.create(SkillTree.SKILL_TREE_REGISTRY_KEY, id);
+		Holder.Reference<SkillTree> holder = this.player.level().holderLookup(SkillTree.SKILL_TREE_REGISTRY_KEY).getOrThrow(rk);
 		
-		Pair<Holder.Reference<SkillTree>, TreeState> unsyncedData = this.dirty.poll();
+		this.unlockTree(holder);
+	}
+	
+	public void unlockTree(Holder.Reference<SkillTree> skillTree) {
+		this.treeStates.put(skillTree, TreeState.UNLOCKED);
 		
-		while (unsyncedData != null) {
-			this.treeStates.put(unsyncedData.getFirst(), unsyncedData.getSecond());
-			NetworkManager.sendToPlayer(new ClientBoundUnlockTree(unsyncedData.getFirst().key()), serverplayer);
-			unsyncedData = this.dirty.poll();
+		if (!this.player.level().isClientSide()) {
+			NetworkManager.sendToPlayer(new ClientBoundSetTreeState(skillTree.key(), TreeState.UNLOCKED, true), (ServerPlayer)this.player);
 		}
+	}
+	
+	public void canLockTree(ResourceLocation id) {
+		ResourceKey<SkillTree> rk = ResourceKey.create(SkillTree.SKILL_TREE_REGISTRY_KEY, id);
+		Holder.Reference<SkillTree> holder = this.player.level().holderLookup(SkillTree.SKILL_TREE_REGISTRY_KEY).getOrThrow(rk);
+		this.canLockTree(holder);
+	}
+	
+	public boolean canLockTree(Holder.Reference<SkillTree> skillTree) {
+		boolean anyUnlocked = false;
+		
+		for (TopDownTreeNode node : this.rootNodes.get(skillTree).values()) {
+			anyUnlocked |= node.nodeState() == NodeState.UNLOCKED;
+		}
+		
+		return !anyUnlocked;
+	}
+	
+	public void lockTree(ResourceLocation id, boolean unequip) {
+		ResourceKey<SkillTree> rk = ResourceKey.create(SkillTree.SKILL_TREE_REGISTRY_KEY, id);
+		Holder.Reference<SkillTree> holder = this.player.level().holderLookup(SkillTree.SKILL_TREE_REGISTRY_KEY).getOrThrow(rk);
+		this.lockTree(holder, unequip);
+	}
+	
+	public void lockTree(Holder.Reference<SkillTree> skillTree, boolean unequip) {
+		this.treeStates.put(skillTree, TreeState.LOCKED);
+		
+		this.rootNodes.get(skillTree).values().forEach(node -> {
+			this.lockNode(skillTree, node.nodeInfo.skill(), unequip);
+		});
+		
+		if (!this.player.level().isClientSide()) {
+			NetworkManager.sendToPlayer(new ClientBoundSetTreeState(skillTree.key(), TreeState.LOCKED, unequip), (ServerPlayer)this.player);
+		}
+	}
+	
+	public boolean canUnlockNode(ResourceLocation id, Skill skill, AbilityPoints abilityPoints, boolean consume) {
+		ResourceKey<SkillTree> rk = ResourceKey.create(SkillTree.SKILL_TREE_REGISTRY_KEY, id);
+		Holder.Reference<SkillTree> holder = this.player.level().holderLookup(SkillTree.SKILL_TREE_REGISTRY_KEY).getOrThrow(rk);
+		
+		return this.canUnlockNode(holder, skill, abilityPoints, consume);
 	}
 	
 	public boolean canUnlockNode(Holder.Reference<SkillTree> skillTree, Skill skill, AbilityPoints abilityPoints, boolean consume) {
@@ -255,10 +299,24 @@ public class SkillTreeProgression {
 		return false;
 	}
 	
+	public void unlockNode(ResourceLocation id, Skill skill) {
+		ResourceKey<SkillTree> rk = ResourceKey.create(SkillTree.SKILL_TREE_REGISTRY_KEY, id);
+		Holder.Reference<SkillTree> holder = this.player.level().holderLookup(SkillTree.SKILL_TREE_REGISTRY_KEY).getOrThrow(rk);
+		
+		this.unlockNode(holder, skill);
+	}
+	
 	public void unlockNode(Holder.Reference<SkillTree> skillTree, Skill skill) {
 		Map<Skill, TopDownTreeNode> nodes = this.nodes.get(skillTree);
 		TopDownTreeNode node =  nodes.get(skill);
 		node.setNodeState(NodeState.UNLOCKED, true, false);
+	}
+	
+	public boolean canLockNode(ResourceLocation id, Skill skill) {
+		ResourceKey<SkillTree> rk = ResourceKey.create(SkillTree.SKILL_TREE_REGISTRY_KEY, id);
+		Holder.Reference<SkillTree> holder = this.player.level().holderLookup(SkillTree.SKILL_TREE_REGISTRY_KEY).getOrThrow(rk);
+		
+		return this.canLockNode(holder, skill);
 	}
 	
 	public boolean canLockNode(Holder.Reference<SkillTree> skillTree, Skill skill) {
@@ -287,6 +345,13 @@ public class SkillTreeProgression {
 		return false;
 	}
 	
+	public void lockNode(ResourceLocation id, Skill skill, boolean unequip) {
+		ResourceKey<SkillTree> rk = ResourceKey.create(SkillTree.SKILL_TREE_REGISTRY_KEY, id);
+		Holder.Reference<SkillTree> holder = this.player.level().holderLookup(SkillTree.SKILL_TREE_REGISTRY_KEY).getOrThrow(rk);
+		
+		this.lockNode(holder, skill, unequip);
+	}
+	
 	public void lockNode(Holder.Reference<SkillTree> skillTree, Skill skill, boolean unequip) {
 		Map<Skill, TopDownTreeNode> nodes = this.nodes.get(skillTree);
 		TopDownTreeNode node =  nodes.get(skill);
@@ -294,15 +359,20 @@ public class SkillTreeProgression {
 	}
 	
 	@OnlyIn(Dist.CLIENT)
-	public void processSyncPacket(ClientBoundUnlockTree packet) {
+	public void processSyncPacket(ClientBoundSetTreeState packet) {
 		Registry<SkillTree> registry = this.registryAccess.registryOrThrow(SkillTree.SKILL_TREE_REGISTRY_KEY);
 		Holder.Reference<SkillTree> skillTree = registry.getHolderOrThrow(packet.skillTree());
 		
-		if (this.treeStates.get(skillTree) == TreeState.LOCKED) {
-			this.treeStates.put(skillTree, TreeState.UNLOCKED);
+		if (this.treeStates.get(skillTree) == TreeState.LOCKED && packet.treeState() == TreeState.UNLOCKED) {
 			Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 1.0F));
 			Minecraft.getInstance().getToasts().addToast(new SkillTreeToast(skillTree));
+		} else if (this.treeStates.get(skillTree) == TreeState.UNLOCKED && packet.treeState() == TreeState.LOCKED) {
+			this.rootNodes.get(skillTree).values().forEach(node -> {
+				this.lockNode(skillTree, node.nodeInfo.skill(), packet.unequip());
+			});
 		}
+		
+		this.treeStates.put(skillTree, packet.treeState());
 	}
 	
 	@OnlyIn(Dist.CLIENT)

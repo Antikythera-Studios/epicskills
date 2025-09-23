@@ -5,7 +5,7 @@ import com.yesman.epicskills.network.client.ClientBoundReloadSkillTree;
 import com.yesman.epicskills.network.client.ClientBoundSetAbilityPoints;
 import com.yesman.epicskills.network.client.ClientBoundTreeInitSyncPacket;
 import com.yesman.epicskills.network.client.ClientBoundUnlockNode;
-import com.yesman.epicskills.network.client.ClientBoundUnlockTree;
+import com.yesman.epicskills.network.client.ClientBoundSetTreeState;
 import com.yesman.epicskills.network.server.ServerBoundConvertAbilityPointRequest;
 import com.yesman.epicskills.network.server.ServerBoundUnlockSkillRequest;
 
@@ -49,7 +49,7 @@ public class NetworkManager {
 		INSTANCE.registerMessage(id++, ClientBoundReloadSkillTree.class, ClientBoundReloadSkillTree::toBytes, ClientBoundReloadSkillTree::fromBytes, ClientBoundReloadSkillTree::handle);
 		INSTANCE.registerMessage(id++, ClientBoundSetAbilityPoints.class, ClientBoundSetAbilityPoints::toBytes, ClientBoundSetAbilityPoints::fromBytes, ClientBoundSetAbilityPoints::handle);
 		INSTANCE.registerMessage(id++, ClientBoundUnlockNode.class, ClientBoundUnlockNode::toBytes, ClientBoundUnlockNode::fromBytes, ClientBoundUnlockNode::handle);
-		INSTANCE.registerMessage(id++, ClientBoundUnlockTree.class, ClientBoundUnlockTree::toBytes, ClientBoundUnlockTree::fromBytes, ClientBoundUnlockTree::handle);
+		INSTANCE.registerMessage(id++, ClientBoundSetTreeState.class, ClientBoundSetTreeState::toBytes, ClientBoundSetTreeState::fromBytes, ClientBoundSetTreeState::handle);
 		INSTANCE.registerMessage(id++, ClientBoundTreeInitSyncPacket.class, ClientBoundTreeInitSyncPacket::toBytes, ClientBoundTreeInitSyncPacket::fromBytes, ClientBoundTreeInitSyncPacket::handle);
 		
 		INSTANCE.registerMessage(id++, ServerBoundConvertAbilityPointRequest.class, ServerBoundConvertAbilityPointRequest::toBytes, ServerBoundConvertAbilityPointRequest::fromBytes, ServerBoundConvertAbilityPointRequest::handle);

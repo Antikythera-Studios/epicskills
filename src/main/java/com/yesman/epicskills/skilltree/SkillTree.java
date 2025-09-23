@@ -13,11 +13,14 @@ import com.yesman.epicskills.util.JsonUtil;
 import net.minecraft.advancements.critereon.EntityPredicate;
 import net.minecraft.core.Registry;
 import net.minecraft.core.Vec3i;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.ExtraCodecs;
 
-public record SkillTree(Vec3i menuBarColor, @Nullable EntityPredicate conditions, boolean locked, boolean hiddenWhenLocked, boolean disabled) {
+public record SkillTree(Vec3i menuBarColor, @Nullable EntityPredicate conditions, @Nullable Component unlockTip, boolean locked, boolean hiddenWhenLocked, boolean disabled) {
 	public static final ResourceKey<Registry<SkillTree>> SKILL_TREE_REGISTRY_KEY = ResourceKey.createRegistryKey(ResourceLocation.fromNamespaceAndPath(EpicSkills.MODID, "tree"));
 	
 	public static final Codec<SkillTree> CODEC = RecordCodecBuilder.create(instance -> 
@@ -27,14 +30,15 @@ public record SkillTree(Vec3i menuBarColor, @Nullable EntityPredicate conditions
 				JsonElement serialized = skilltree.conditions() == null ? null : JsonUtil.removeNullElements(skilltree.conditions().serializeToJson());
 				return Optional.ofNullable(serialized);
 			}),
+			Codec.STRING.optionalFieldOf("unlock_tip").forGetter(node -> node.unlockTip() == null ? Optional.empty() : Optional.of(((TranslatableContents)((MutableComponent)node.unlockTip()).getContents()).getKey())),
 			Codec.BOOL.optionalFieldOf("locked").forGetter(skilltree -> Optional.ofNullable(skilltree.locked())),
 			Codec.BOOL.optionalFieldOf("hidden").forGetter(skilltree -> Optional.ofNullable(skilltree.hiddenWhenLocked())),
 			Codec.BOOL.optionalFieldOf("disabled").forGetter(skilltree -> Optional.ofNullable(skilltree.disabled()))
 		)
-		.apply(instance, (menuBarColorOpt, conditions, lockedOpt, hiddenWhenLockedOpt, disabledOpt) -> {
+		.apply(instance, (menuBarColorOpt, conditions, unlockTip, lockedOpt, hiddenWhenLockedOpt, disabledOpt) -> {
 			JsonElement entityPredicatesJson = conditions.orElse(null);
 			EntityPredicate entityPredicates = entityPredicatesJson == null ? null : EntityPredicate.fromJson(entityPredicatesJson);
-			return new SkillTree(menuBarColorOpt.orElse(new Vec3i(255, 255, 255)), entityPredicates, lockedOpt.orElse(false), hiddenWhenLockedOpt.orElse(false), disabledOpt.orElse(false));
+			return new SkillTree(menuBarColorOpt.orElse(new Vec3i(255, 255, 255)), entityPredicates, unlockTip.isPresent() ? Component.translatable(unlockTip.get()) : null, lockedOpt.orElse(false), hiddenWhenLockedOpt.orElse(false), disabledOpt.orElse(false));
 		})
 	);
 	

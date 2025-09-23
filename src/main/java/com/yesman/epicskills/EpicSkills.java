@@ -31,6 +31,25 @@ import net.minecraftforge.registries.DataPackRegistryEvent;
 import yesman.epicfight.main.EpicFightSharedConstants;
 import yesman.epicfight.world.item.EpicFightCreativeTabs;
 
+/**
+ *  ***************************************************************
+ *  Major version changes
+ *  ***************************************************************
+ *  20.1.1 Created
+ *  
+ *  ***************************************************************
+ *  20.1.2
+ *  
+ *  Support for diagonal & upward connections to a child skill node
+ *  
+ *  ***************************************************************
+ *  20.1.3
+ *  
+ *  Added `/skilltree` command variation for lock/unlock skill tree pages
+ *  Changed `/skilltree` to require permission level 2 so that only admins can modify skill tree
+ *  
+ *  @author yesman
+ */
 @Mod(EpicSkills.MODID)
 public class EpicSkills {
     public static final String MODID = "epicskills";

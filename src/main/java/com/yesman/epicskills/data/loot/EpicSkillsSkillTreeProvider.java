@@ -146,6 +146,7 @@ public class EpicSkillsSkillTreeProvider extends SkillTreeProvider {
 						)
 					.build()
 				)
+				.unlockTipTranslationKey("skill_tree.epicskills.infernal_might.unlock_tip")
 				.newNode(EpicFightSkills.STAMINA_PILLAGER)
 					.position(40, 30)
 					.abilityPointsRequirement(1)

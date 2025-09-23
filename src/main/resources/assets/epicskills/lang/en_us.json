@@ -21,6 +21,7 @@
 	
 	"skill_tree.epicskills.battleborn": "Battleborn",
 	"skill_tree.epicskills.infernal_might": "Infernal Might",
+	"skill_tree.epicskills.infernal_might.unlock_tip": "Find the unholy power in a deeper world",
 	
 	"unlock_tip.epicskills.battleborn.meteor_slam": "Defeat Ender dragon",
 	
@@ -35,10 +36,16 @@
 	"commands.epicskills.skilltree_progression.reset.success.other": "Reset skill tree to %s targets",
 	"commands.epicskills.skilltree_progression.unlock.success.single": "Unlocked %s in skill tree %s for %s",
 	"commands.epicskills.skilltree_progression.unlock.success.other": "Unlocked %s in skill tree %s to %s targets",
-	"commands.epicskills.skilltree_progression.unlock.failed": "Can't unlock a node. Nearby nodes' state prevents unlocking.",
+	"commands.epicskills.skilltree_progression.unlock.failed": "Can't unlock the node. Nearby nodes' states are preventing unlocking it.",
 	"commands.epicskills.skilltree_progression.lock.success.single": "Locked %s in skill tree %s for %s",
 	"commands.epicskills.skilltree_progression.lock.success.other": "Locked %s in skill tree %s to %s targets",
-	"commands.epicskills.skilltree_progression.lock.failed": "Can't lock a node. Nearby nodes' state prevents locking.",
+	"commands.epicskills.skilltree_progression.lock.failed": "Can't lock the node. Nearby nodes' state are preventing locking it.",
+	"commands.epicskills.skilltree_progression.unlock_tree.success.single": "Unlocked %s for %s",
+	"commands.epicskills.skilltree_progression.unlock_tree.success.other": "Unlocked %s to %s targets",
+	"commands.epicskills.skilltree_progression.lock_tree.success.single": "Locked %s for %s",
+	"commands.epicskills.skilltree_progression.lock_tree.success.other": "Locked %s to %s targets",
+	"commands.epicskills.skilltree_progression.lock_tree.failed": "Can't lock the skill tree. Clear all nodes or give the force option true.",
+	"commands.epicskills.skilltree_progression.failed": "Failed to execute command due to invalid player data",
 	
 	"eof": "eof"
 }

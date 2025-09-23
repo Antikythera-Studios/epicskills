@@ -52,6 +52,7 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.core.Vec3i;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.util.FastColor.ARGB32;
@@ -123,7 +124,14 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
 				
 				TreeSelectButton skillTreeButton = new TreeSelectButton(index.intValue(), skillTree);
 				skillTreeButton.active = treeState != SkillTreeProgression.TreeState.LOCKED;
-				skillTreeButton.setTooltip(Tooltip.create(Component.translatable(SkillTree.toDescriptionId(skillTree.key()))));
+				
+				MutableComponent tooltip = Component.translatable(SkillTree.toDescriptionId(skillTree.key()));
+				
+				if (treeState == SkillTreeProgression.TreeState.LOCKED && skillTree.value().unlockTip() != null) {
+					tooltip.append(Component.literal("\n")).append(skillTree.value().unlockTip());
+				}
+				
+				skillTreeButton.setTooltip(Tooltip.create(tooltip));
 				
 				this.skillTreeButtons.put(index.intValue(), skillTreeButton);
 			}
@@ -369,6 +377,7 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
 					SkillTreeScreen.this.setTreeIndex(treeIndex);
 				}
 			}, Button.DEFAULT_NARRATION);
+			
 			this.skillTree = skillTree;
 		}
 		
