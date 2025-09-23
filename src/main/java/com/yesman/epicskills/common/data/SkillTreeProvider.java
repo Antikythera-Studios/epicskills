@@ -74,6 +74,7 @@ public abstract class SkillTreeProvider implements DataProvider {
 		String unlockTipTranslationKey;
 		boolean locked = false;
 		boolean hiddenWhenLocked = false;
+		int priority = 100;
 		
 		public SkillTreePageBuilder(ResourceLocation name) {
 			this.name = name;
@@ -95,6 +96,7 @@ public abstract class SkillTreeProvider implements DataProvider {
 			}
 			
 			if (this.unlockTipTranslationKey != null) jsonObject.addProperty("unlock_tip", this.unlockTipTranslationKey);
+			if (this.priority != 100) jsonObject.addProperty("priority", this.priority);
 			
 			return jsonObject;
 		}
@@ -187,6 +189,14 @@ public abstract class SkillTreeProvider implements DataProvider {
 		 */
 		public SkillTreePageBuilder hiddenWhenLocked(boolean hiddenWhenLocked) {
 			this.hiddenWhenLocked = hiddenWhenLocked;
+			return this;
+		}
+		
+		/**
+		 * Priority of buttons that shown on the left side of the skill tree screen
+		 */
+		public SkillTreePageBuilder priority(int priority) {
+			this.priority = priority;
 			return this;
 		}
 		

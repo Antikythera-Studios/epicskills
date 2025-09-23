@@ -2,7 +2,7 @@ package com.yesman.epicskills.data;
 
 import com.yesman.epicskills.EpicSkills;
 import com.yesman.epicskills.common.data.SkillTreeProvider;
-import com.yesman.epicskills.data.loot.EpicSkillsSkillTreeProvider;
+import com.yesman.epicskills.data.provider.EpicSkillsSkillTreeProvider;
 
 import net.minecraft.data.DataProvider;
 import net.minecraftforge.data.event.GatherDataEvent;

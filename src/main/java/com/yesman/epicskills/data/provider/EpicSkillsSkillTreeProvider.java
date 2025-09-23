@@ -1,4 +1,4 @@
-package com.yesman.epicskills.data.loot;
+package com.yesman.epicskills.data.provider;
 
 import java.util.function.Consumer;
 

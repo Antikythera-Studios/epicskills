@@ -111,7 +111,13 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
 		HolderLookup<SkillTree> skillTreeLookup = this.player.level().holderLookup(SkillTree.SKILL_TREE_REGISTRY_KEY);
 		MutableInt index = new MutableInt(0);
 		
-		skillTreeLookup.listElements().forEach(skillTree -> {
+		skillTreeLookup.listElements().sorted((page1, page2) -> {
+			if (page1.get().priority() == page2.get().priority()) {
+				return page1.key().location().toString().compareTo(page2.key().location().toString());
+			}
+			
+			return Integer.compare(page1.get().priority(), page2.get().priority());
+		}).forEach(skillTree -> {
 			if (skillTree.get().disabled()) {
 				return;
 			}
