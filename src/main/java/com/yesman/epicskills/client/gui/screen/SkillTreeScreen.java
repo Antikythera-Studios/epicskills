@@ -226,7 +226,10 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
 	@Override
 	public void onClose() {
 		this.customScale = -1;
-		this.minecraft.resizeDisplay();
+		Minecraft minecraft = Minecraft.getInstance();
+		int i = minecraft.getWindow().calculateScale(minecraft.options.guiScale().get(), minecraft.isEnforceUnicode());
+		minecraft.getWindow().setGuiScale((double)i);
+		
 		super.onClose();
 	}
 	
