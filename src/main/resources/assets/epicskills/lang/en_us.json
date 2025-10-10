@@ -2,6 +2,9 @@
 	"chat.epicskills.unlock_notification": "New skill tree unlocked ",
 	"chat.epicskills.messages.no_page": "No skill tree page",
 	
+	"gui.epicskills.messages.change_skill_one": "Would you replace %d to %d?",
+	"gui.epicskills.messages.change_skill_multiple": "Would you replace a skill you've learned to %d?",
+	
 	"gui.epicskills.skill_tree": "Skill tree screen",
 	"gui.epicskills.skill_tree.imported_node": "This skill is from %s",
 	

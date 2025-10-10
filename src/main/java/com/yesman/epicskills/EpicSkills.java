@@ -33,7 +33,7 @@ import yesman.epicfight.world.item.EpicFightCreativeTabs;
 
 /**
  *  ***************************************************************
- *  Major version changes
+ *  Major changes
  *  ***************************************************************
  *  20.1.1 Created
  *  
@@ -47,6 +47,13 @@ import yesman.epicfight.world.item.EpicFightCreativeTabs;
  *  
  *  Added `/skilltree` command variation for lock/unlock skill tree pages
  *  Changed `/skilltree` to require permission level 2 so that only admins can modify skill tree
+ *  
+ *  ***************************************************************
+ *  20.1.4
+ *  
+ *  Now you automatically learn a skill when you unlock a node in a skill tree. if you already learn same categorized skills, it will ask if you'll change to the new skill.
+ *  Now only skill nodes are affected by custom scale in the skill tree screen
+ *  Dependency fixed: Epic Fight 20.12.11 (Older versions will crash)
  *  
  *  @author yesman
  */

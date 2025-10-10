@@ -309,7 +309,7 @@ public class PlayerSkillTreeCommand {
 			player.getCapability(AbilityPoints.ABILITY_POINTS).ifPresent(abilityPoints -> {
 				if (force || skillTreeProgression.canUnlockNode(skillTree, skill, abilityPoints, false)) {
 					skillTreeProgression.unlockNode(skillTree, skill);
-					NetworkManager.sendToPlayer(new ClientBoundUnlockNode(skillTree.key(), skill, NodeState.UNLOCKED, false, false, false), player);
+					NetworkManager.sendToPlayer(new ClientBoundUnlockNode(skillTree.key(), skill, NodeState.UNLOCKED, false, false, false, false), player);
 					succeess.set(true);
 				}
 			});
@@ -324,7 +324,7 @@ public class PlayerSkillTreeCommand {
 		player.getCapability(SkillTreeProgression.SKILL_TREE_PROGRESSION).ifPresent(skillTreeProgression -> {
 			if (force || skillTreeProgression.canLockNode(skillTree, skill)) {
 				skillTreeProgression.lockNode(skillTree, skill, unequip);
-				NetworkManager.sendToPlayer(new ClientBoundUnlockNode(skillTree.key(), skill, NodeState.LOCKED, false, unequip, false), player);
+				NetworkManager.sendToPlayer(new ClientBoundUnlockNode(skillTree.key(), skill, NodeState.LOCKED, false, unequip, false, false), player);
 				succeess.set(true);
 			}
 		});

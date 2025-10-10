@@ -208,7 +208,7 @@ public class SkillTreeProgression {
 			
 			if (meets) {
 				pair.getSecond().setNodeState(NodeState.UNLOCKABLE, true, false);
-				NetworkManager.sendToPlayer(new ClientBoundUnlockNode(pair.getFirst().key(), pair.getSecond().nodeInfo().skill(), NodeState.UNLOCKABLE, true, false, false), serverplayer);
+				NetworkManager.sendToPlayer(new ClientBoundUnlockNode(pair.getFirst().key(), pair.getSecond().nodeInfo().skill(), NodeState.UNLOCKABLE, true, false, false, false), serverplayer);
 			}
 			
 			return meets;

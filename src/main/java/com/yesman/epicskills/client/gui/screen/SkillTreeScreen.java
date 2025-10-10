@@ -98,7 +98,7 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
 	private boolean synclock;
 	private boolean discarded = false;
 	
-	private int customScale = -1;
+	private int nodeScale = -1;
 	
 	public SkillTreeScreen(LocalPlayerPatch playerpatch) {
 		super(Component.translatable("gui." + EpicSkills.MODID + ".skill_tree"));
@@ -198,20 +198,6 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
 		this.addRenderableOnly(new AbilityPointsMeter(this.width - (this.expConversionButton.getWidth() + 150), 10));
 	}
 	
-	@Override
-	protected void repositionElements() {
-		if (this.customScale != -1) {
-			Minecraft minecraft = Minecraft.getInstance();
-			int maxScale = minecraft.getWindow().calculateScale(2147483646, minecraft.options.forceUnicodeFont().get());
-			this.customScale = (int)Math.min(maxScale, this.customScale);
-			this.minecraft.getWindow().setGuiScale(this.customScale);
-			this.width = this.minecraft.getWindow().getGuiScaledWidth();
-			this.height = this.minecraft.getWindow().getGuiScaledHeight();
-		}
-		
-		this.rebuildWidgets();
-	}
-	
 	public void relocateScaleButtons() {
 		int titleWidth = this.font.width(this.currentPage.title);
 		this.scaleUpButton.setPosition(53 + titleWidth, 16);
@@ -221,16 +207,6 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
 	@Override
 	public void tick() {
 		this.expConversionButton.tick();
-	}
-	
-	@Override
-	public void onClose() {
-		this.customScale = -1;
-		Minecraft minecraft = Minecraft.getInstance();
-		int i = minecraft.getWindow().calculateScale(minecraft.options.guiScale().get(), minecraft.isEnforceUnicode());
-		minecraft.getWindow().setGuiScale((double)i);
-		
-		super.onClose();
 	}
 	
 	@Override
@@ -284,13 +260,17 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
 	}
 	
 	@Override
-	public boolean mouseClicked(double pMouseX, double pMouseY, int pButton) {
-		if (super.mouseClicked(pMouseX, pMouseY, pButton)) {
+	public boolean mouseClicked(double mouseX, double mouseY, int pButton) {
+		if (super.mouseClicked(mouseX, mouseY, pButton)) {
 			return true;
 		}
 		
+		float correctScale = (nodeScale != -1) ? this.nodeScale / (float)minecraft.getWindow().getGuiScale() : 1.0F;
+		int correctedMouseX = (int)((mouseX - this.currentPage.pageLeft) / correctScale);
+		int correctedMouseY = (int)((mouseY - this.currentPage.pageTop) / correctScale);
+		
 		for (NodeButton button : this.currentPage.treeNodes.values()) {
-			if (button.mouseClicked(pMouseX - this.currentPage.pageLeft, pMouseY - this.currentPage.pageTop, pButton)) {
+			if (button.mouseClicked(correctedMouseX, correctedMouseY, pButton)) {
 				return true;
 			}
 		}
@@ -330,18 +310,16 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
 	}
 	
 	public void scaleUp() {
-		Minecraft minecraft = Minecraft.getInstance();
-		int maxScale = minecraft.getWindow().calculateScale(2147483646, minecraft.options.forceUnicodeFont().get());
-		this.customScale = (int)Math.min(maxScale, Minecraft.getInstance().getWindow().getGuiScale() + 1.0D);
-		minecraft.getWindow().setGuiScale(this.customScale);
-		this.resize(minecraft, this.minecraft.getWindow().getGuiScaledWidth(), this.minecraft.getWindow().getGuiScaledHeight());
+		int nextScale = Math.min(6, (this.nodeScale == -1 ? (int)this.minecraft.getWindow().getGuiScale() : this.nodeScale) + 1);
+		int maxScale = this.minecraft.getWindow().calculateScale(2147483646, this.minecraft.options.forceUnicodeFont().get());
+		
+		if (nextScale <= maxScale) {
+			this.nodeScale = nextScale;
+		}
 	}
 	
 	public void scaleDown() {
-		Minecraft minecraft = Minecraft.getInstance();
-		this.customScale = (int)Math.max(1.0D, Minecraft.getInstance().getWindow().getGuiScale() - 1.0D);
-		minecraft.getWindow().setGuiScale(this.customScale);
-		this.resize(minecraft, this.minecraft.getWindow().getGuiScaledWidth(), this.minecraft.getWindow().getGuiScaledHeight());
+		this.nodeScale = Math.max(1, (this.nodeScale == -1 ? (int)this.minecraft.getWindow().getGuiScale() : this.nodeScale) - 1);
 	}
 	
 	@Override
@@ -594,11 +572,24 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
 		
 		public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
 			guiGraphics.pose().pushPose();
+			
 			guiGraphics.enableScissor(44, 34, SkillTreeScreen.this.width, SkillTreeScreen.this.height);
 			guiGraphics.pose().translate(this.pageLeft, this.pageTop, 0.0F);
 			
+			float correctScale = (nodeScale != -1) ? nodeScale / (float)minecraft.getWindow().getGuiScale() : 1.0F;
+			
+			if (nodeScale != -1) {
+				guiGraphics.pose().scale(correctScale, correctScale, 1.0F);
+			}
+			
 			RenderSystem.enableDepthTest();
-			this.treeNodes.values().forEach(nodeButton -> nodeButton.renderWidget(guiGraphics, mouseX, mouseY, partialTicks));
+			int correctedMouseX = (int)((mouseX - this.pageLeft) / correctScale);
+			int correctedMouseY = (int)((mouseY - this.pageTop) / correctScale);
+			
+			for (NodeButton nodeButton : this.treeNodes.values()) {
+				nodeButton.renderWidget(guiGraphics, correctedMouseX, correctedMouseY, partialTicks);
+			}
+			
 			RenderSystem.disableDepthTest();
 			
 			guiGraphics.disableScissor();
@@ -636,8 +627,8 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
 				return this.active && this.visible
 						&& pMouseX >= (double) this.getX() - widthHalf
 						&& pMouseY >= (double) this.getY() - heightHalf
-						&& pMouseX < (double) (this.getX() + widthHalf)
-						&& pMouseY < (double) (this.getY() + heightHalf);
+						&& pMouseX <  (double) this.getX() + widthHalf
+						&& pMouseY <  (double) this.getY() + heightHalf;
 			}
 			
 			@Override
@@ -658,9 +649,6 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
 			
 			@Override
 			protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-				mouseX -= TreePage.this.pageLeft;
-				mouseY -= TreePage.this.pageTop;
-				
 				guiGraphics.pose().pushPose();
 				guiGraphics.pose().translate(0.0F, 0.0F, 100.0F);
 				
@@ -746,8 +734,8 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
 				// Render tooltip manually since the depth test fails with vanilla render pass
 				if (
 					!SkillTreeScreen.this.backgroundMode &&
-					this.getX() - widthHalf < mouseX && mouseX < this.getX() + widthHalf &&
-					this.getY() - heightHalf < mouseY && mouseY < this.getY() + heightHalf
+					this.getX() - widthHalf - 2 < mouseX && mouseX < this.getX() + widthHalf &&
+					this.getY() - heightHalf - 2 < mouseY && mouseY < this.getY() + heightHalf
 				) {
 					if (this.importedNode) {
 						SkillTreeScreen.this.setTooltipForNextRenderPass(List.of(
@@ -830,7 +818,14 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
 						.endVertex();
 						
 						RenderSystem.disableCull();
-						RenderSystem.lineWidth(2.0F * (float)Minecraft.getInstance().getWindow().getGuiScale());
+						
+						if (nodeScale != -1) {
+							float correctScale = nodeScale / (float)minecraft.getWindow().getGuiScale();
+							RenderSystem.lineWidth(correctScale * 4.0F);
+						} else {
+							RenderSystem.lineWidth((float)minecraft.getWindow().getGuiScale() * 2.0F);
+						}
+						
 						RenderSystem.setShader(GameRenderer::getRendertypeLinesShader);
 						BufferUploader.drawWithShader(bufferBuilder.end());
 						RenderSystem.enableCull();

@@ -11,7 +11,6 @@ import com.yesman.epicskills.skilltree.SkillTree;
 import com.yesman.epicskills.world.capability.AbilityPoints;
 import com.yesman.epicskills.world.capability.SkillTreeProgression;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
@@ -23,6 +22,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import yesman.epicfight.client.gui.datapack.screen.MessageScreen;
 import yesman.epicfight.client.gui.screen.SkillBookScreen;
 import yesman.epicfight.client.gui.screen.SlotSelectScreen;
 import yesman.epicfight.main.EpicFightMod;
@@ -51,7 +51,7 @@ public class SkillInfoScreen extends SkillBookScreen {
 	protected void init() {
 		super.init();
 		
-		this.parentScreen.init(this.minecraft, this.parentScreen.width, this.parentScreen.height);
+		this.parentScreen.init(this.minecraft, this.width, this.height);
 		
 		boolean active = true;
 		Component tooltip = null;
@@ -141,7 +141,41 @@ public class SkillInfoScreen extends SkillBookScreen {
 	
 	public void onSyncPacketArrived(ClientBoundUnlockNode feedbackPacket) {
 		if (feedbackPacket.closeScreen()) {
-			Minecraft.getInstance().setScreen(this.parentScreen);
+			if (feedbackPacket.askChange()) {
+				var containers = this.playerpatch.getSkillCapability().getSkillContainersFor(feedbackPacket.skill().getCategory());
+				
+				this.minecraft.setScreen(
+					new MessageScreen<> (
+						"",
+						containers.size() > 1 ? 
+							Component.translatable(
+								"gui.epicskills.messages.change_skill_multiple",
+								Component.translatable(feedbackPacket.skill().getTranslationKey()).getString()
+							) :
+							Component.translatable(
+								"gui.epicskills.messages.change_skill_one",
+								Component.translatable(containers.iterator().next().getSkill().getTranslationKey()).getString(),
+								Component.translatable(feedbackPacket.skill().getTranslationKey()).getString()
+							),
+						this,
+						button -> {
+							if (containers.size() > 1) {
+								SlotSelectScreen slotSelectScreen = new SlotSelectScreen(containers, this);
+								this.minecraft.setScreen(slotSelectScreen);
+							} else {
+								this.acquireSkillTo(containers.iterator().next());
+							}
+						},
+						button -> {
+							this.minecraft.setScreen(this.parentScreen);
+						},
+						180,
+						0
+					).setLayerFarPlane(2000).autoCalculateHeight()
+				);
+			} else {
+				this.minecraft.setScreen(this.parentScreen);
+			}
 		}
 	}
 	
@@ -158,7 +192,6 @@ public class SkillInfoScreen extends SkillBookScreen {
 		
 		@Override
 		protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-			Minecraft minecraft = Minecraft.getInstance();
 			guiGraphics.setColor(1.0F, 1.0F, 1.0F, this.alpha);
 			RenderSystem.enableBlend();
 			RenderSystem.enableDepthTest();

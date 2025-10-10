@@ -2,6 +2,8 @@ package com.yesman.epicskills.network.server;
 
 import java.util.function.Supplier;
 
+import org.apache.commons.lang3.mutable.MutableBoolean;
+
 import com.yesman.epicskills.EpicSkills;
 import com.yesman.epicskills.network.NetworkManager;
 import com.yesman.epicskills.network.client.ClientBoundUnlockNode;
@@ -16,7 +18,11 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkEvent;
 import net.minecraftforge.registries.RegistryManager;
 import yesman.epicfight.api.data.reloader.SkillManager;
+import yesman.epicfight.network.EpicFightNetworkManager;
 import yesman.epicfight.skill.Skill;
+import yesman.epicfight.skill.SkillContainer;
+import yesman.epicfight.world.capabilities.EpicFightCapabilities;
+import yesman.epicfight.world.capabilities.entitypatch.player.ServerPlayerPatch;
 
 public record ServerBoundUnlockSkillRequest(ResourceKey<SkillTree> skilltree, Skill skill) {
 	public static ServerBoundUnlockSkillRequest fromBytes(FriendlyByteBuf buf) {
@@ -37,7 +43,23 @@ public record ServerBoundUnlockSkillRequest(ResourceKey<SkillTree> skilltree, Sk
 			player.level().holderLookup(SkillTree.SKILL_TREE_REGISTRY_KEY).get(msg.skilltree()).ifPresentOrElse(skillTree -> {
 				if (skillTreeProgression.canUnlockNode(skillTree, msg.skill(), abilityPoints, true)) {
 					skillTreeProgression.unlockNode(skillTree, msg.skill());
-					NetworkManager.sendToPlayer(new ClientBoundUnlockNode(msg.skilltree(), msg.skill(), NodeState.UNLOCKED, false, false, true), (ServerPlayer)player);
+					
+					MutableBoolean askSkillChangeLater = new MutableBoolean(false);
+					
+					EpicFightCapabilities.getUnparameterizedEntityPatch(player, ServerPlayerPatch.class).ifPresent(playerpatch -> {
+						SkillContainer container = playerpatch.getSkillCapability().getFirstEmptyContainer(msg.skill().getCategory());
+						
+						if (container != null) {
+							if (container.setSkill(msg.skill())) {
+								EpicFightNetworkManager.sendToPlayer(container.createSyncPacketToLocalPlayer(), player);
+								EpicFightNetworkManager.sendToAllPlayerTrackingThisEntity(container.createSyncPacketToRemotePlayer(), player);
+							}
+						} else {
+							askSkillChangeLater.setTrue();
+						}
+					});
+					
+					NetworkManager.sendToPlayer(new ClientBoundUnlockNode(msg.skilltree(), msg.skill(), NodeState.UNLOCKED, false, false, askSkillChangeLater.booleanValue(), true), (ServerPlayer)player);
 				}
 				
 				abilityPoints.sendChanges();

@@ -14,9 +14,9 @@ import net.minecraftforge.registries.RegistryManager;
 import yesman.epicfight.api.data.reloader.SkillManager;
 import yesman.epicfight.skill.Skill;
 
-public record ClientBoundUnlockNode(ResourceKey<SkillTree> skillTree, Skill skill, NodeState nodeState, boolean unlockAlarm, boolean unequip, boolean closeScreen) {
+public record ClientBoundUnlockNode(ResourceKey<SkillTree> skillTree, Skill skill, NodeState nodeState, boolean unlockAlarm, boolean unequip, boolean askChange, boolean closeScreen) {
 	public static ClientBoundUnlockNode fromBytes(FriendlyByteBuf buf) {
-		ClientBoundUnlockNode msg = new ClientBoundUnlockNode(buf.readResourceKey(SkillTree.SKILL_TREE_REGISTRY_KEY), buf.readRegistryId(), buf.readEnum(NodeState.class), buf.readBoolean(), buf.readBoolean(), buf.readBoolean());
+		ClientBoundUnlockNode msg = new ClientBoundUnlockNode(buf.readResourceKey(SkillTree.SKILL_TREE_REGISTRY_KEY), buf.readRegistryId(), buf.readEnum(NodeState.class), buf.readBoolean(), buf.readBoolean(), buf.readBoolean(), buf.readBoolean());
 		return msg;
 	}
 	
@@ -26,6 +26,7 @@ public record ClientBoundUnlockNode(ResourceKey<SkillTree> skillTree, Skill skil
 		buf.writeEnum(msg.nodeState());
 		buf.writeBoolean(msg.unlockAlarm());
 		buf.writeBoolean(msg.unequip());
+		buf.writeBoolean(msg.askChange());
 		buf.writeBoolean(msg.closeScreen());
 	}
 	
