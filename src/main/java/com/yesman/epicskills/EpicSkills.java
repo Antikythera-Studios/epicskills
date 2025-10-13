@@ -16,6 +16,8 @@ import com.yesman.epicskills.skilltree.SkillTreeEntry;
 import com.yesman.epicskills.world.capability.AbilityPoints;
 import com.yesman.epicskills.world.capability.SkillTreeProgression;
 
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.MinecraftForge;
@@ -29,6 +31,7 @@ import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.registries.DataPackRegistryEvent;
 import yesman.epicfight.main.EpicFightSharedConstants;
+import yesman.epicfight.skill.Skill;
 import yesman.epicfight.world.item.EpicFightCreativeTabs;
 
 /**
@@ -54,6 +57,16 @@ import yesman.epicfight.world.item.EpicFightCreativeTabs;
  *  Now you automatically learn a skill when you unlock a node in a skill tree. if you already learn same categorized skills, it will ask if you'll change to the new skill.
  *  Now only skill nodes are affected by custom scale in the skill tree screen
  *  Dependency fixed: Epic Fight 20.12.11 (Older versions will crash)
+ *  
+ *  ***************************************************************
+ *  20.1.5
+ *  
+ *  -Internal changes-
+ *  Fixed skill tree progression state modifying methods to synchronize node states from server to client
+ *  {@link SkillTreeProgression#unlockTree(ResourceKey, ServerPlayer)}
+ *  {@link SkillTreeProgression#lockTree(ResourceKey, boolean, ServerPlayer)}
+ *  {@link SkillTreeProgression#unlockNode(ResourceKey, Skill, ServerPlayer)}
+ *  {@link SkillTreeProgression#lockNode(ResourceKey, Skill, boolean, ServerPlayer)}
  *  
  *  @author yesman
  */

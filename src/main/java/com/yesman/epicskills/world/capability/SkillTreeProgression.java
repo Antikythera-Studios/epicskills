@@ -21,6 +21,7 @@ import com.yesman.epicskills.client.gui.screen.SkillInfoScreen;
 import com.yesman.epicskills.network.NetworkManager;
 import com.yesman.epicskills.network.client.ClientBoundSetTreeState;
 import com.yesman.epicskills.network.client.ClientBoundUnlockNode;
+import com.yesman.epicskills.registry.entry.EpicSkillsSkillTrees;
 import com.yesman.epicskills.skilltree.SkillTree;
 import com.yesman.epicskills.skilltree.SkillTreeEntry;
 import com.yesman.epicskills.skilltree.SkillTreeEntry.Node;
@@ -215,25 +216,12 @@ public class SkillTreeProgression {
 		});
 	}
 	
-	public void unlockTree(ResourceLocation id) {
-		ResourceKey<SkillTree> rk = ResourceKey.create(SkillTree.SKILL_TREE_REGISTRY_KEY, id);
-		Holder.Reference<SkillTree> holder = this.player.level().holderLookup(SkillTree.SKILL_TREE_REGISTRY_KEY).getOrThrow(rk);
-		
-		this.unlockTree(holder);
-	}
-	
 	public void unlockTree(Holder.Reference<SkillTree> skillTree) {
 		this.treeStates.put(skillTree, TreeState.UNLOCKED);
 		
 		if (!this.player.level().isClientSide()) {
 			NetworkManager.sendToPlayer(new ClientBoundSetTreeState(skillTree.key(), TreeState.UNLOCKED, true), (ServerPlayer)this.player);
 		}
-	}
-	
-	public void canLockTree(ResourceLocation id) {
-		ResourceKey<SkillTree> rk = ResourceKey.create(SkillTree.SKILL_TREE_REGISTRY_KEY, id);
-		Holder.Reference<SkillTree> holder = this.player.level().holderLookup(SkillTree.SKILL_TREE_REGISTRY_KEY).getOrThrow(rk);
-		this.canLockTree(holder);
 	}
 	
 	public boolean canLockTree(Holder.Reference<SkillTree> skillTree) {
@@ -246,12 +234,6 @@ public class SkillTreeProgression {
 		return !anyUnlocked;
 	}
 	
-	public void lockTree(ResourceLocation id, boolean unequip) {
-		ResourceKey<SkillTree> rk = ResourceKey.create(SkillTree.SKILL_TREE_REGISTRY_KEY, id);
-		Holder.Reference<SkillTree> holder = this.player.level().holderLookup(SkillTree.SKILL_TREE_REGISTRY_KEY).getOrThrow(rk);
-		this.lockTree(holder, unequip);
-	}
-	
 	public void lockTree(Holder.Reference<SkillTree> skillTree, boolean unequip) {
 		this.treeStates.put(skillTree, TreeState.LOCKED);
 		
@@ -262,13 +244,6 @@ public class SkillTreeProgression {
 		if (!this.player.level().isClientSide()) {
 			NetworkManager.sendToPlayer(new ClientBoundSetTreeState(skillTree.key(), TreeState.LOCKED, unequip), (ServerPlayer)this.player);
 		}
-	}
-	
-	public boolean canUnlockNode(ResourceLocation id, Skill skill, AbilityPoints abilityPoints, boolean consume) {
-		ResourceKey<SkillTree> rk = ResourceKey.create(SkillTree.SKILL_TREE_REGISTRY_KEY, id);
-		Holder.Reference<SkillTree> holder = this.player.level().holderLookup(SkillTree.SKILL_TREE_REGISTRY_KEY).getOrThrow(rk);
-		
-		return this.canUnlockNode(holder, skill, abilityPoints, consume);
 	}
 	
 	public boolean canUnlockNode(Holder.Reference<SkillTree> skillTree, Skill skill, AbilityPoints abilityPoints, boolean consume) {
@@ -299,24 +274,10 @@ public class SkillTreeProgression {
 		return false;
 	}
 	
-	public void unlockNode(ResourceLocation id, Skill skill) {
-		ResourceKey<SkillTree> rk = ResourceKey.create(SkillTree.SKILL_TREE_REGISTRY_KEY, id);
-		Holder.Reference<SkillTree> holder = this.player.level().holderLookup(SkillTree.SKILL_TREE_REGISTRY_KEY).getOrThrow(rk);
-		
-		this.unlockNode(holder, skill);
-	}
-	
 	public void unlockNode(Holder.Reference<SkillTree> skillTree, Skill skill) {
 		Map<Skill, TopDownTreeNode> nodes = this.nodes.get(skillTree);
 		TopDownTreeNode node =  nodes.get(skill);
 		node.setNodeState(NodeState.UNLOCKED, true, false);
-	}
-	
-	public boolean canLockNode(ResourceLocation id, Skill skill) {
-		ResourceKey<SkillTree> rk = ResourceKey.create(SkillTree.SKILL_TREE_REGISTRY_KEY, id);
-		Holder.Reference<SkillTree> holder = this.player.level().holderLookup(SkillTree.SKILL_TREE_REGISTRY_KEY).getOrThrow(rk);
-		
-		return this.canLockNode(holder, skill);
 	}
 	
 	public boolean canLockNode(Holder.Reference<SkillTree> skillTree, Skill skill) {
@@ -343,13 +304,6 @@ public class SkillTreeProgression {
 		}
 		
 		return false;
-	}
-	
-	public void lockNode(ResourceLocation id, Skill skill, boolean unequip) {
-		ResourceKey<SkillTree> rk = ResourceKey.create(SkillTree.SKILL_TREE_REGISTRY_KEY, id);
-		Holder.Reference<SkillTree> holder = this.player.level().holderLookup(SkillTree.SKILL_TREE_REGISTRY_KEY).getOrThrow(rk);
-		
-		this.lockNode(holder, skill, unequip);
 	}
 	
 	public void lockNode(Holder.Reference<SkillTree> skillTree, Skill skill, boolean unequip) {
@@ -412,6 +366,82 @@ public class SkillTreeProgression {
 		return this.nodes.get(skillTree);
 	}
 	
+	/**********************************************************************************************************
+	 * State checking methods by ResourceKey
+	 * @param skillTreeId {@link EpicSkillsSkillTrees} or a custom constant class contains skill tree pages' id
+	 **********************************************************************************************************/
+	/**
+	 * Return true when no skills unlocked in the given skill tree's id
+	 */
+	public boolean canLockTree(ResourceKey<SkillTree> skillTreeId) {
+		Holder.Reference<SkillTree> holder = this.player.level().holderLookup(SkillTree.SKILL_TREE_REGISTRY_KEY).getOrThrow(skillTreeId);
+		
+		return this.canLockTree(holder);
+	}
+	
+	/**
+	 * Check player's ability points, and states of parent nodes
+	 */
+	public boolean canUnlockNode(ResourceKey<SkillTree> skillTreeId, Skill skill, AbilityPoints abilityPoints, boolean consume) {
+		Holder.Reference<SkillTree> holder = this.player.level().holderLookup(SkillTree.SKILL_TREE_REGISTRY_KEY).getOrThrow(skillTreeId);
+		
+		return this.canUnlockNode(holder, skill, abilityPoints, consume);
+	}
+	
+	/**
+	 * Check states of child nodes
+	 */
+	public boolean canLockNode(ResourceKey<SkillTree> skillTreeId, Skill skill) {
+		Holder.Reference<SkillTree> holder = this.player.level().holderLookup(SkillTree.SKILL_TREE_REGISTRY_KEY).getOrThrow(skillTreeId);
+		
+		return this.canLockNode(holder, skill);
+	}
+	/*****************************
+	 * State checking methods end
+	 *****************************/
+	
+	/*******************************************************************************************************************
+	 * Synchronization methods to handle node's states in a skill tree
+	 * 
+	 * @param skillTreeId {@link EpicSkillsSkillTrees} or a custom constant class contains skill tree pages' id
+	 * @param serverplayer to be sure this method is called in server side
+	 * @throws IllegalStateException throws exception when it can't find matching skill tree for the given skill tree id
+	 *******************************************************************************************************************/
+	public void unlockTree(ResourceKey<SkillTree> skillTreeId, ServerPlayer serverplayer) throws IllegalStateException {
+		Holder.Reference<SkillTree> holder = serverplayer.level().holderLookup(SkillTree.SKILL_TREE_REGISTRY_KEY).getOrThrow(skillTreeId);
+		
+		this.unlockTree(holder);
+	}
+	
+	/**
+	 * @param unequip: Remove all skills belong to the tree from skill containers if the skill is equipped
+	 */
+	public void lockTree(ResourceKey<SkillTree> skillTreeId, boolean unequip, ServerPlayer serverplayer) throws IllegalStateException {
+		Holder.Reference<SkillTree> holder = serverplayer.level().holderLookup(SkillTree.SKILL_TREE_REGISTRY_KEY).getOrThrow(skillTreeId);
+		
+		this.lockTree(holder, unequip);
+	}
+	
+	public void unlockNode(ResourceKey<SkillTree> skillTreeId, Skill skill, ServerPlayer serverplayer) throws IllegalStateException {
+		Holder.Reference<SkillTree> holder = serverplayer.level().holderLookup(SkillTree.SKILL_TREE_REGISTRY_KEY).getOrThrow(skillTreeId);
+		
+		this.unlockNode(holder, skill);
+		NetworkManager.sendToPlayer(new ClientBoundUnlockNode(skillTreeId, skill, NodeState.UNLOCKED, false, false, false, false), serverplayer);
+	}
+	
+	/**
+	 * @param unequip: Remove skill from a skill container if the skill is equipped
+	 */
+	public void lockNode(ResourceKey<SkillTree> skillTreeId, Skill skill, boolean unequip, ServerPlayer serverplayer) throws IllegalStateException {
+		Holder.Reference<SkillTree> holder = serverplayer.level().holderLookup(SkillTree.SKILL_TREE_REGISTRY_KEY).getOrThrow(skillTreeId);
+		
+		this.lockNode(holder, skill, unequip);
+		NetworkManager.sendToPlayer(new ClientBoundUnlockNode(skillTreeId, skill, NodeState.LOCKED, false, unequip, false, false), serverplayer);
+	}
+	/*****************
+	 * Sync methods end
+	 *****************/
+	
 	public abstract class TopDownTreeNode {
 		protected final Holder.Reference<SkillTree> belongedSkillTree;
 		protected final List<TopDownTreeNode> parent = new ArrayList<> ();
@@ -439,7 +469,7 @@ public class SkillTreeProgression {
 		
 		public abstract NodeState nodeState();
 		
-		public abstract void setNodeState(NodeState nodeState, boolean propagateChildState, boolean modifyEquip);
+		protected abstract void setNodeState(NodeState nodeState, boolean propagateChildState, boolean modifyEquip);
 	}
 	
 	public class CommonTreeNode extends TopDownTreeNode {
