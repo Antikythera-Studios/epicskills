@@ -8,8 +8,9 @@
 	"gui.epicskills.skill_tree": "Skill tree screen",
 	"gui.epicskills.skill_tree.imported_node": "This skill is from %s",
 	
-	"gui.epicskills.exp_meter.tooltip": "have / need experience to convert to ability points",
+	"gui.epicskills.exp_meter.tooltip": "have / needed experience to convert to ability points",
 	"gui.epicskills.abilitypoints.tooltip": "Ability points",
+	"gui.epicskills.openskilleditor.tooltip": "Open skill editor",
 	
 	"gui.epicskills.skillinfo.unlock": "Unlock",
 	"gui.epicskills.skillinfo.locked": "Locked",
@@ -49,6 +50,10 @@
 	"commands.epicskills.skilltree_progression.lock_tree.success.other": "Locked %s to %s targets",
 	"commands.epicskills.skilltree_progression.lock_tree.failed": "Can't lock the skill tree. Clear all nodes or give the force option true.",
 	"commands.epicskills.skilltree_progression.failed": "Failed to execute command due to invalid player data",
+	
+	"key.epicskills.gui": "Epic Fight: Skill Tree GUI",
+	
+	"key.epicskills.open_skill_tree": "Open Skill Tree",
 	
 	"eof": "eof"
 }

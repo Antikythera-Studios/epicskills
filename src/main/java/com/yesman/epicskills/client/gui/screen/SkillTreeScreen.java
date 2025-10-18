@@ -63,10 +63,12 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import yesman.epicfight.api.utils.ParseUtil;
 import yesman.epicfight.api.utils.math.Vec2i;
+import yesman.epicfight.client.gui.screen.SkillEditScreen;
 import yesman.epicfight.client.world.capabilites.entitypatch.player.LocalPlayerPatch;
 import yesman.epicfight.main.EpicFightMod;
 import yesman.epicfight.skill.Skill;
 import yesman.epicfight.world.capabilities.skill.CapabilitySkill;
+import yesman.epicfight.world.item.EpicFightItems;
 
 @OnlyIn(Dist.CLIENT)
 public class SkillTreeScreen extends Screen implements BackgroundRenderableScreen {
@@ -193,6 +195,7 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
 		this.addRenderableWidget(this.expConversionButton);
 		this.addRenderableWidget(this.scaleUpButton);
 		this.addRenderableWidget(this.scaleDownButton);
+		this.addRenderableWidget(new OpenSkillEditorButton(this.width - 30, 8, 20, 20));
 		
 		this.addRenderableOnly(new ExperienceMeter(this.width - (this.expConversionButton.getWidth() + 70), 14));
 		this.addRenderableOnly(new AbilityPointsMeter(this.width - (this.expConversionButton.getWidth() + 150), 10));
@@ -478,12 +481,37 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
 		}
 		
 		@Override
-		protected void updateWidgetNarration(NarrationElementOutput pNarrationElementOutput) {
-			this.defaultButtonNarrationText(pNarrationElementOutput);
+		protected void updateWidgetNarration(NarrationElementOutput narrationElementOutput) {
+			this.defaultButtonNarrationText(narrationElementOutput);
 		}
 		
 		@Override
-		public void playDownSound(SoundManager pHandler) {
+		public void playDownSound(SoundManager handler) {
+		}
+	}
+	
+	@OnlyIn(Dist.CLIENT)
+	public class OpenSkillEditorButton extends AbstractButton {
+		public OpenSkillEditorButton(int x, int y, int width, int height) {
+			super(x, y, width, height, Component.empty());
+			this.setTooltip(Tooltip.create(Component.translatable(EpicSkills.format("gui.%s.openskilleditor.tooltip"))));
+		}
+		
+		@Override
+		protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+			super.renderWidget(guiGraphics, mouseX, mouseY, partialTick);
+			
+			guiGraphics.renderItem(EpicFightItems.SKILLBOOK.get().getDefaultInstance(), this.getX() + 2, this.getY() + 2);
+		}
+		
+		@Override
+		protected void updateWidgetNarration(NarrationElementOutput narrationElementOutput) {
+			this.defaultButtonNarrationText(narrationElementOutput);
+		}
+		
+		@Override
+		public void onPress() {
+			minecraft.setScreen(new SkillEditScreen(player, playerSkills));
 		}
 	}
 	
@@ -820,8 +848,7 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
 						RenderSystem.disableCull();
 						
 						if (nodeScale != -1) {
-							float correctScale = nodeScale / (float)minecraft.getWindow().getGuiScale();
-							RenderSystem.lineWidth(correctScale * 4.0F);
+							RenderSystem.lineWidth((float)nodeScale * 2.0F);
 						} else {
 							RenderSystem.lineWidth((float)minecraft.getWindow().getGuiScale() * 2.0F);
 						}

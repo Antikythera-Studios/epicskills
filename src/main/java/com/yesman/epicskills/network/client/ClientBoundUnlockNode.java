@@ -16,8 +16,7 @@ import yesman.epicfight.skill.Skill;
 
 public record ClientBoundUnlockNode(ResourceKey<SkillTree> skillTree, Skill skill, NodeState nodeState, boolean unlockAlarm, boolean unequip, boolean askChange, boolean closeScreen) {
 	public static ClientBoundUnlockNode fromBytes(FriendlyByteBuf buf) {
-		ClientBoundUnlockNode msg = new ClientBoundUnlockNode(buf.readResourceKey(SkillTree.SKILL_TREE_REGISTRY_KEY), buf.readRegistryId(), buf.readEnum(NodeState.class), buf.readBoolean(), buf.readBoolean(), buf.readBoolean(), buf.readBoolean());
-		return msg;
+		return new ClientBoundUnlockNode(buf.readResourceKey(SkillTree.SKILL_TREE_REGISTRY_KEY), buf.readRegistryId(), buf.readEnum(NodeState.class), buf.readBoolean(), buf.readBoolean(), buf.readBoolean(), buf.readBoolean());
 	}
 	
 	public static void toBytes(ClientBoundUnlockNode msg, FriendlyByteBuf buf) {

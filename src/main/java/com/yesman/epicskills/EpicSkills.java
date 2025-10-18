@@ -16,8 +16,6 @@ import com.yesman.epicskills.skilltree.SkillTreeEntry;
 import com.yesman.epicskills.world.capability.AbilityPoints;
 import com.yesman.epicskills.world.capability.SkillTreeProgression;
 
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.MinecraftForge;
@@ -31,42 +29,25 @@ import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.registries.DataPackRegistryEvent;
 import yesman.epicfight.main.EpicFightSharedConstants;
-import yesman.epicfight.skill.Skill;
 import yesman.epicfight.world.item.EpicFightCreativeTabs;
 
 /**
  *  ***************************************************************
  *  Major changes
  *  ***************************************************************
- *  20.1.1 Created
+ *  20.2.0
+ *  
+ *  UI enhancements
+ *  Replace default skill tree open key to 'N', And now you can open original skill edit screen in Epic Fight
+ *  Added skill editor open button in skill tree screen
+ *  
+ *  System changes
+ *  Players now get restricted by a cooldown to replace skills, which added in Epic Fight 20.13.1
+ *  
+ *  Bugfix
+ *  Fixed husk not dropping Ability stone
  *  
  *  ***************************************************************
- *  20.1.2
- *  
- *  Support for diagonal & upward connections to a child skill node
- *  
- *  ***************************************************************
- *  20.1.3
- *  
- *  Added `/skilltree` command variation for lock/unlock skill tree pages
- *  Changed `/skilltree` to require permission level 2 so that only admins can modify skill tree
- *  
- *  ***************************************************************
- *  20.1.4
- *  
- *  Now you automatically learn a skill when you unlock a node in a skill tree. if you already learn same categorized skills, it will ask if you'll change to the new skill.
- *  Now only skill nodes are affected by custom scale in the skill tree screen
- *  Dependency fixed: Epic Fight 20.12.11 (Older versions will crash)
- *  
- *  ***************************************************************
- *  20.1.5
- *  
- *  -Internal changes-
- *  Fixed skill tree progression state modifying methods to synchronize node states from server to client
- *  {@link SkillTreeProgression#unlockTree(ResourceKey, ServerPlayer)}
- *  {@link SkillTreeProgression#lockTree(ResourceKey, boolean, ServerPlayer)}
- *  {@link SkillTreeProgression#unlockNode(ResourceKey, Skill, ServerPlayer)}
- *  {@link SkillTreeProgression#lockNode(ResourceKey, Skill, boolean, ServerPlayer)}
  *  
  *  @author yesman
  */
@@ -74,6 +55,14 @@ import yesman.epicfight.world.item.EpicFightCreativeTabs;
 public class EpicSkills {
     public static final String MODID = "epicskills";
     public static final Logger LOGGER = LogUtils.getLogger();
+    
+    public static String prefix(String s) {
+		return String.format("%s:%s", MODID, s);
+	}
+	
+	public static String format(String s) {
+		return String.format(s, MODID);
+	}
     
 	public EpicSkills(FMLJavaModLoadingContext context) {
         IEventBus modEventBus = context.getModEventBus();

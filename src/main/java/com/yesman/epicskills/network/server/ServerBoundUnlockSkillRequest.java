@@ -47,15 +47,18 @@ public record ServerBoundUnlockSkillRequest(ResourceKey<SkillTree> skilltree, Sk
 					MutableBoolean askSkillChangeLater = new MutableBoolean(false);
 					
 					EpicFightCapabilities.getUnparameterizedEntityPatch(player, ServerPlayerPatch.class).ifPresent(playerpatch -> {
-						SkillContainer container = playerpatch.getSkillCapability().getFirstEmptyContainer(msg.skill().getCategory());
-						
-						if (container != null) {
-							if (container.setSkill(msg.skill())) {
-								EpicFightNetworkManager.sendToPlayer(container.createSyncPacketToLocalPlayer(), player);
-								EpicFightNetworkManager.sendToAllPlayerTrackingThisEntity(container.createSyncPacketToRemotePlayer(), player);
+						if (!playerpatch.getSkillCapability().isEquipping(msg.skill())) {
+							SkillContainer container = playerpatch.getSkillCapability().getFirstEmptyContainer(msg.skill().getCategory());
+							
+							if (container != null) {
+								// Doesn't increase replace cooldown when first unlock a skill
+								if (container.setSkill(msg.skill())) {
+									EpicFightNetworkManager.sendToPlayer(container.createSyncPacketToLocalPlayer(), player);
+									EpicFightNetworkManager.sendToAllPlayerTrackingThisEntity(container.createSyncPacketToRemotePlayer(), player);
+								}
+							} else {
+								askSkillChangeLater.setTrue();
 							}
-						} else {
-							askSkillChangeLater.setTrue();
 						}
 					});
 					

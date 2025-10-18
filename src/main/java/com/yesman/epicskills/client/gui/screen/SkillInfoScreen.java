@@ -29,6 +29,7 @@ import yesman.epicfight.main.EpicFightMod;
 import yesman.epicfight.network.EpicFightNetworkManager;
 import yesman.epicfight.network.client.CPChangeSkill;
 import yesman.epicfight.skill.SkillContainer;
+import yesman.epicfight.world.gamerule.EpicFightGameRules;
 
 @OnlyIn(Dist.CLIENT)
 public class SkillInfoScreen extends SkillBookScreen {
@@ -58,16 +59,25 @@ public class SkillInfoScreen extends SkillBookScreen {
 		Component message = this.node.nodeState().displayedOnButton();
 		
 		if (this.node.nodeState() == SkillTreeProgression.NodeState.UNLOCKED) {
-			if (this.playerpatch.getSkillCapability().isEquipping(this.skill)) {
-				message = Component.translatable("gui." + EpicSkills.MODID + ".skillinfo.unequip");
+			int shortestCooldown = EpicFightGameRules.SKILL_REPLACE_COOLDOWN.getRuleValue(this.playerpatch.getOriginal().level());
+			
+			for (SkillContainer skillContainer : this.playerpatch.getSkillCapability().getSkillContainersFor(this.skill.getCategory())) {
+				if (shortestCooldown > skillContainer.getReplaceCooldown()) shortestCooldown = skillContainer.getReplaceCooldown();
 			}
-		} else  if (this.node.nodeState() == SkillTreeProgression.NodeState.UNLOCKABLE) {
+			
+			if (this.playerpatch.getSkillCapability().isEquipping(this.skill)) {
+				message = Component.translatable(EpicSkills.format("gui.%s.skillinfo.unequip"));
+			} else if (shortestCooldown > 0 && !this.playerpatch.getOriginal().isCreative()) {
+				tooltip = Component.translatable(EpicFightMod.format("gui.%s.container_on_cooldown"), shortestCooldown / 20);
+				active = false;
+			}
+		} else if (this.node.nodeState() == SkillTreeProgression.NodeState.UNLOCKABLE) {
 			if (this.node.nodeInfo().requiredAbilityPoints() > this.abilityPoints.getAbilityPoints()) {
-				tooltip = Component.translatable("gui." + EpicSkills.MODID + ".skillinfo.no_ability_points.tooltip", this.node.nodeInfo().requiredAbilityPoints(), this.abilityPoints.getAbilityPoints());
+				tooltip = Component.translatable(EpicSkills.format("gui.%s.skillinfo.no_ability_points.tooltip"), this.node.nodeInfo().requiredAbilityPoints(), this.abilityPoints.getAbilityPoints());
 				active = false;
 			}
 		} else if (this.node.nodeState() == SkillTreeProgression.NodeState.LOCKED) {
-			tooltip = Component.translatable("gui." + EpicSkills.MODID + ".skillinfo.locked.tooltip");
+			tooltip = Component.translatable(EpicSkills.format("gui.%s.skillinfo.locked.tooltip"));
 			active = false;
 		}
 		
@@ -82,7 +92,7 @@ public class SkillInfoScreen extends SkillBookScreen {
 						if (this.playerpatch.getSkillCapability().isEquipping(this.skill)) {
 							this.playerpatch.getSkillContainerFor(this.skill).ifPresent(skillContainer -> {
 								skillContainer.setSkill(null);
-								EpicFightNetworkManager.sendToServer(new CPChangeSkill(skillContainer.getSlot(), -1, false, null));
+								EpicFightNetworkManager.sendToServer(new CPChangeSkill(skillContainer.getSlot(), -1, null));
 							});
 							
 							this.minecraft.setScreen(this.parentScreen);
@@ -135,48 +145,62 @@ public class SkillInfoScreen extends SkillBookScreen {
 	@Override
 	protected void acquireSkillTo(SkillContainer skillContainer) {
 		skillContainer.setSkill(this.skill);
-		EpicFightNetworkManager.sendToServer(new CPChangeSkill(skillContainer.getSlot(), -1, false, this.skill));
+		EpicFightNetworkManager.sendToServer(new CPChangeSkill(skillContainer.getSlot(), -1, this.skill));
 		this.minecraft.setScreen(this.parentScreen);
 	}
 	
 	public void onSyncPacketArrived(ClientBoundUnlockNode feedbackPacket) {
 		if (feedbackPacket.closeScreen()) {
-			if (feedbackPacket.askChange()) {
+			if (feedbackPacket.askChange() && this.playerpatch.getSkillContainerFor(feedbackPacket.skill()).isEmpty()) {
 				var containers = this.playerpatch.getSkillCapability().getSkillContainersFor(feedbackPacket.skill().getCategory());
+				int shortestCooldown = EpicFightGameRules.SKILL_REPLACE_COOLDOWN.getRuleValue(this.playerpatch.getOriginal().level());
 				
-				this.minecraft.setScreen(
-					new MessageScreen<> (
-						"",
-						containers.size() > 1 ? 
-							Component.translatable(
-								"gui.epicskills.messages.change_skill_multiple",
-								Component.translatable(feedbackPacket.skill().getTranslationKey()).getString()
-							) :
-							Component.translatable(
-								"gui.epicskills.messages.change_skill_one",
-								Component.translatable(containers.iterator().next().getSkill().getTranslationKey()).getString(),
-								Component.translatable(feedbackPacket.skill().getTranslationKey()).getString()
-							),
-						this,
-						button -> {
-							if (containers.size() > 1) {
-								SlotSelectScreen slotSelectScreen = new SlotSelectScreen(containers, this);
-								this.minecraft.setScreen(slotSelectScreen);
-							} else {
-								this.acquireSkillTo(containers.iterator().next());
-							}
-						},
-						button -> {
-							this.minecraft.setScreen(this.parentScreen);
-						},
-						180,
-						0
-					).setLayerFarPlane(2000).autoCalculateHeight()
-				);
-			} else {
-				this.minecraft.setScreen(this.parentScreen);
+				for (SkillContainer skillContainer : containers) {
+					if (shortestCooldown > skillContainer.getReplaceCooldown()) shortestCooldown = skillContainer.getReplaceCooldown();
+				}
+				
+				if (shortestCooldown == 0 || this.playerpatch.getOriginal().isCreative()) {
+					this.minecraft.setScreen(
+						new MessageScreen<> (
+							"",
+							containers.size() > 1 ? 
+								Component.translatable(
+									EpicSkills.format("gui.%s.messages.change_skill_multiple"),
+									Component.translatable(feedbackPacket.skill().getTranslationKey()).getString()
+								) :
+								Component.translatable(
+									EpicSkills.format("gui.%s.messages.change_skill_one"),
+									Component.translatable(containers.iterator().next().getSkill().getTranslationKey()).getString(),
+									Component.translatable(feedbackPacket.skill().getTranslationKey()).getString()
+								),
+							this,
+							button -> {
+								if (containers.size() > 1) {
+									SlotSelectScreen slotSelectScreen = new SlotSelectScreen(containers, this);
+									this.minecraft.setScreen(slotSelectScreen);
+								} else {
+									this.acquireSkillTo(containers.iterator().next());
+								}
+							},
+							button -> {
+								this.minecraft.setScreen(this.parentScreen);
+							},
+							180,
+							0
+						).setLayerFarPlane(2000).autoCalculateHeight()
+					);
+					
+					return;
+				}
 			}
+			
+			this.minecraft.setScreen(this.parentScreen);
 		}
+	}
+	
+	@Override
+	protected boolean consumesItem() {
+		return false;
 	}
 	
 	@OnlyIn(Dist.CLIENT)
