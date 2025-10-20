@@ -3,61 +3,77 @@ package com.yesman.epicskills.network;
 import com.yesman.epicskills.EpicSkills;
 import com.yesman.epicskills.network.client.ClientBoundReloadSkillTree;
 import com.yesman.epicskills.network.client.ClientBoundSetAbilityPoints;
-import com.yesman.epicskills.network.client.ClientBoundTreeInitSyncPacket;
-import com.yesman.epicskills.network.client.ClientBoundUnlockNode;
 import com.yesman.epicskills.network.client.ClientBoundSetTreeState;
+import com.yesman.epicskills.network.client.ClientBoundSyncTreeState;
+import com.yesman.epicskills.network.client.ClientBoundUnlockNode;
 import com.yesman.epicskills.network.server.ServerBoundConvertAbilityPointRequest;
 import com.yesman.epicskills.network.server.ServerBoundUnlockSkillRequest;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.network.NetworkRegistry;
-import net.minecraftforge.network.PacketDistributor;
-import net.minecraftforge.network.PacketDistributor.PacketTarget;
-import net.minecraftforge.network.simple.SimpleChannel;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+import net.neoforged.neoforge.network.registration.PayloadRegistrar;
+import yesman.epicfight.network.ManagedCustomPacketPayload;
 
+@EventBusSubscriber(modid = EpicSkills.MODID)
 public class NetworkManager {
 	private static final String PROTOCOL_VERSION = "1";
 	
-	public static final SimpleChannel INSTANCE =
-		NetworkRegistry.newSimpleChannel(
-			ResourceLocation.fromNamespaceAndPath(EpicSkills.MODID, "network_manager"),
-			() -> PROTOCOL_VERSION,
-			PROTOCOL_VERSION::equals,
-			PROTOCOL_VERSION::equals
-		);
-
-	public static <MSG> void sendToServer(MSG message) {
-		INSTANCE.sendToServer(message);
-	}
+	// Client bound payloads
+	public static final CustomPacketPayload.Type<ClientBoundReloadSkillTree> CLIENT_BOUND_RELOAD_SKILL_TREE = ManagedCustomPacketPayload.registerPayloadType(ClientBoundReloadSkillTree.class, EpicSkills.MODID, "client_bound_reload_skill_tree");
+	public static final CustomPacketPayload.Type<ClientBoundSetAbilityPoints> CLIENT_BOUND_SET_ABILITY_POINTS = ManagedCustomPacketPayload.registerPayloadType(ClientBoundSetAbilityPoints.class, EpicSkills.MODID, "client_bound_set_ability_points");
+	public static final CustomPacketPayload.Type<ClientBoundSyncTreeState> CLIENT_BOUND_SYNC_TREE_STATE = ManagedCustomPacketPayload.registerPayloadType(ClientBoundSyncTreeState.class, EpicSkills.MODID, "client_bound_sync_tree_state");
+	public static final CustomPacketPayload.Type<ClientBoundUnlockNode> CLIENT_BOUND_UNLOCK_NODE = ManagedCustomPacketPayload.registerPayloadType(ClientBoundUnlockNode.class, EpicSkills.MODID, "client_bound_reload_unlock_node");
+	public static final CustomPacketPayload.Type<ClientBoundSetTreeState> CLIENT_BOUND_UNLOCK_TREE = ManagedCustomPacketPayload.registerPayloadType(ClientBoundSetTreeState.class, EpicSkills.MODID, "client_bound_reload_unlock_tree");
 	
-	private static <MSG> void sendToClient(MSG message, PacketTarget packetTarget) {
-		INSTANCE.send(packetTarget, message);
-	}
+	// Server bound payloads
+	public static final CustomPacketPayload.Type<ServerBoundConvertAbilityPointRequest> SERVER_BOUND_CONVERT_ABILITY_POINT_REQUEST = ManagedCustomPacketPayload.registerPayloadType(ServerBoundConvertAbilityPointRequest.class, EpicSkills.MODID, "server_bound_animator_control");
+	public static final CustomPacketPayload.Type<ServerBoundUnlockSkillRequest> SERVER_BOUND_UNLOCK_SKILL_REQUEST = ManagedCustomPacketPayload.registerPayloadType(ServerBoundUnlockSkillRequest.class, EpicSkills.MODID, "server_bound_change_player_mode");
 	
-	public static <MSG> void sendToPlayer(MSG message, ServerPlayer player) {
-		sendToClient(message, PacketDistributor.PLAYER.with(() -> player));
-	}
-	
-	public static void registerPackets() {
-		int id = 0;
+	@SubscribeEvent
+	public static void register(final RegisterPayloadHandlersEvent event) {
+		final PayloadRegistrar registrar = event.registrar(PROTOCOL_VERSION);
 		
-		INSTANCE.registerMessage(id++, ClientBoundReloadSkillTree.class, ClientBoundReloadSkillTree::toBytes, ClientBoundReloadSkillTree::fromBytes, ClientBoundReloadSkillTree::handle);
-		INSTANCE.registerMessage(id++, ClientBoundSetAbilityPoints.class, ClientBoundSetAbilityPoints::toBytes, ClientBoundSetAbilityPoints::fromBytes, ClientBoundSetAbilityPoints::handle);
-		INSTANCE.registerMessage(id++, ClientBoundUnlockNode.class, ClientBoundUnlockNode::toBytes, ClientBoundUnlockNode::fromBytes, ClientBoundUnlockNode::handle);
-		INSTANCE.registerMessage(id++, ClientBoundSetTreeState.class, ClientBoundSetTreeState::toBytes, ClientBoundSetTreeState::fromBytes, ClientBoundSetTreeState::handle);
-		INSTANCE.registerMessage(id++, ClientBoundTreeInitSyncPacket.class, ClientBoundTreeInitSyncPacket::toBytes, ClientBoundTreeInitSyncPacket::fromBytes, ClientBoundTreeInitSyncPacket::handle);
+		registrar
+			.playToClient(
+	    		  CLIENT_BOUND_RELOAD_SKILL_TREE
+	    		, ClientBoundReloadSkillTree.STREAM_CODEC
+	    		, EpicSkillsClientBoundPayloadHandler::handleReloadSkillTree
+	    	)
+			.playToClient(
+				  CLIENT_BOUND_SET_ABILITY_POINTS
+	    		, ClientBoundSetAbilityPoints.STREAM_CODEC
+	    		, EpicSkillsClientBoundPayloadHandler::handleSetAbilityPoints
+	    	)
+			.playToClient(
+				  CLIENT_BOUND_SYNC_TREE_STATE
+	    		, ClientBoundSyncTreeState.STREAM_CODEC
+	    		, EpicSkillsClientBoundPayloadHandler::handleSyncTreeState
+	    	)
+			.playToClient(
+				  CLIENT_BOUND_UNLOCK_NODE
+	    		, ClientBoundUnlockNode.STREAM_CODEC
+	    		, EpicSkillsClientBoundPayloadHandler::handleUnlockNode
+	    	)
+			.playToClient(
+				  CLIENT_BOUND_UNLOCK_TREE
+	    		, ClientBoundSetTreeState.STREAM_CODEC
+	    		, EpicSkillsClientBoundPayloadHandler::handleUnlockTree
+	    	)
+			;
 		
-		INSTANCE.registerMessage(id++, ServerBoundConvertAbilityPointRequest.class, ServerBoundConvertAbilityPointRequest::toBytes, ServerBoundConvertAbilityPointRequest::fromBytes, ServerBoundConvertAbilityPointRequest::handle);
-		INSTANCE.registerMessage(id++, ServerBoundUnlockSkillRequest.class, ServerBoundUnlockSkillRequest::toBytes, ServerBoundUnlockSkillRequest::fromBytes, ServerBoundUnlockSkillRequest::handle);
-	}
-	
-	@OnlyIn(Dist.CLIENT)
-	public static Player getPlayerInClient() {
-		return Minecraft.getInstance().player;
+		registrar
+			.playToServer(
+				  SERVER_BOUND_CONVERT_ABILITY_POINT_REQUEST
+		    	, ServerBoundConvertAbilityPointRequest.STREAM_CODEC
+		    	, EpicSkillsServerBoundPayloadHandler::handleConvertAbilityPointRequest
+			)
+			.playToServer(
+				  SERVER_BOUND_UNLOCK_SKILL_REQUEST
+		    	, ServerBoundUnlockSkillRequest.STREAM_CODEC
+		    	, EpicSkillsServerBoundPayloadHandler::handleUnlockSkillRequest
+			)
+		;
 	}
 }

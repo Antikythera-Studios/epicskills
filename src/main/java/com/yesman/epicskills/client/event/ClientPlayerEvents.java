@@ -1,16 +1,16 @@
 package com.yesman.epicskills.client.event;
 
 import com.yesman.epicskills.EpicSkills;
-import com.yesman.epicskills.world.capability.SkillTreeProgression;
+import com.yesman.epicskills.registry.entry.EpicSkillsAttachmentTypes;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.entity.Entity;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 
-@Mod.EventBusSubscriber(modid = EpicSkills.MODID, value = Dist.CLIENT)
+@EventBusSubscriber(modid = EpicSkills.MODID, value = Dist.CLIENT)
 public abstract class ClientPlayerEvents {
 	@SubscribeEvent
 	public static void epicskills$clientPlayerRespawn(ClientPlayerNetworkEvent.Clone event) {
@@ -18,8 +18,8 @@ public abstract class ClientPlayerEvents {
 			return;
 		}
 		
-		event.getOldPlayer().getCapability(SkillTreeProgression.SKILL_TREE_PROGRESSION).ifPresent(skillTreeProgression -> {
-			event.getNewPlayer().getCapability(SkillTreeProgression.SKILL_TREE_PROGRESSION).ifPresent(skillTreeProgression$2 -> {
+		event.getOldPlayer().getExistingData(EpicSkillsAttachmentTypes.SKILL_TREE_PROGRESSION).ifPresent(skillTreeProgression -> {
+			event.getNewPlayer().getExistingData(EpicSkillsAttachmentTypes.SKILL_TREE_PROGRESSION).ifPresent(skillTreeProgression$2 -> {
 				CompoundTag compound = new CompoundTag();
 				skillTreeProgression.serializeTo(compound);
 				skillTreeProgression$2.deserializeFrom(compound);

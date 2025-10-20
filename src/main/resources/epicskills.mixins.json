@@ -1,7 +1,7 @@
 {
 	"required": false,
 	"minVersion": "0.8",
-	"compatibilityLevel": "JAVA_17",
+	"compatibilityLevel": "JAVA_21",
 	"package": "com.yesman.epicskills.mixin",
 	"client": [
 		"MixinControlEngine"
@@ -11,5 +11,5 @@
 	"injectors": {
 		"defaultRequire": 1
 	},
-	"refmap": "mixins.epicskills.refmap.json"
+	"refmap": "epicskills.mixins.refmap.json"
 }

@@ -4,24 +4,26 @@ import java.util.Set;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.yesman.epicskills.EpicSkills;
-import com.yesman.epicskills.network.NetworkManager;
+import com.yesman.epicskills.neoforge.attachment.AbilityPoints;
+import com.yesman.epicskills.neoforge.attachment.SkillTreeProgression;
 import com.yesman.epicskills.network.client.ClientBoundUnlockNode;
 import com.yesman.epicskills.network.server.ServerBoundUnlockSkillRequest;
+import com.yesman.epicskills.registry.entry.EpicSkillsAttachmentTypes;
 import com.yesman.epicskills.skilltree.SkillTree;
-import com.yesman.epicskills.world.capability.AbilityPoints;
-import com.yesman.epicskills.world.capability.SkillTreeProgression;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.gui.components.WidgetSprites;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.Holder;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 import yesman.epicfight.client.gui.datapack.screen.MessageScreen;
 import yesman.epicfight.client.gui.screen.SkillBookScreen;
 import yesman.epicfight.client.gui.screen.SlotSelectScreen;
@@ -33,8 +35,6 @@ import yesman.epicfight.world.gamerule.EpicFightGameRules;
 
 @OnlyIn(Dist.CLIENT)
 public class SkillInfoScreen extends SkillBookScreen {
-	private static final ResourceLocation SKILLBOOK_BACKGROUND = ResourceLocation.fromNamespaceAndPath(EpicFightMod.MODID, "textures/gui/screen/skillbook.png");
-	
 	private final Holder.Reference<SkillTree> skillTree;
 	private final SkillTreeProgression.TopDownTreeNode node;
 	private final AbilityPoints abilityPoints;
@@ -45,7 +45,7 @@ public class SkillInfoScreen extends SkillBookScreen {
 		
 		this.skillTree = skillTree;
 		this.node = node;
-		this.abilityPoints = opener.getCapability(AbilityPoints.ABILITY_POINTS).orElseThrow(() -> new IllegalStateException("No ability points"));
+		this.abilityPoints = opener.getExistingData(EpicSkillsAttachmentTypes.ABILITY_POINTS).orElseThrow(() -> new IllegalStateException("No ability points"));
 	}
 	
 	@Override
@@ -61,11 +61,11 @@ public class SkillInfoScreen extends SkillBookScreen {
 		if (this.node.nodeState() == SkillTreeProgression.NodeState.UNLOCKED) {
 			int shortestCooldown = EpicFightGameRules.SKILL_REPLACE_COOLDOWN.getRuleValue(this.playerpatch.getOriginal().level());
 			
-			for (SkillContainer skillContainer : this.playerpatch.getSkillCapability().getSkillContainersFor(this.skill.getCategory())) {
+			for (SkillContainer skillContainer : this.playerpatch.getPlayerSkills().getSkillContainersFor(this.skill.getCategory())) {
 				if (shortestCooldown > skillContainer.getReplaceCooldown()) shortestCooldown = skillContainer.getReplaceCooldown();
 			}
 			
-			if (this.playerpatch.getSkillCapability().isEquipping(this.skill)) {
+			if (this.playerpatch.getPlayerSkills().isEquipping(this.skill)) {
 				message = Component.translatable(EpicSkills.format("gui.%s.skillinfo.unequip"));
 			} else if (shortestCooldown > 0 && !this.playerpatch.getOriginal().isCreative()) {
 				tooltip = Component.translatable(EpicFightMod.format("gui.%s.container_on_cooldown"), shortestCooldown / 20);
@@ -87,17 +87,17 @@ public class SkillInfoScreen extends SkillBookScreen {
 				button -> {
 					if (this.node.nodeState() == SkillTreeProgression.NodeState.UNLOCKABLE) {
 						button.active = false;
-						NetworkManager.sendToServer(new ServerBoundUnlockSkillRequest(this.skillTree.key(), this.skill));
+						EpicFightNetworkManager.sendToServer(new ServerBoundUnlockSkillRequest(this.skillTree.key(), this.skill.holder()));
 					} else if (this.node.nodeState() == SkillTreeProgression.NodeState.UNLOCKED) {
-						if (this.playerpatch.getSkillCapability().isEquipping(this.skill)) {
+						if (this.playerpatch.getPlayerSkills().isEquipping(this.skill)) {
 							this.playerpatch.getSkillContainerFor(this.skill).ifPresent(skillContainer -> {
 								skillContainer.setSkill(null);
-								EpicFightNetworkManager.sendToServer(new CPChangeSkill(skillContainer.getSlot(), -1, null));
+								EpicFightNetworkManager.sendToServer(new CPChangeSkill(skillContainer.getSlot(), null, -1));
 							});
 							
 							this.minecraft.setScreen(this.parentScreen);
 						} else {
-							Set<SkillContainer> skillContainers = this.playerpatch.getSkillCapability().getSkillContainersFor(this.skill.getCategory());
+							Set<SkillContainer> skillContainers = this.playerpatch.getPlayerSkills().getSkillContainersFor(this.skill.getCategory());
 							
 							if (skillContainers.size() == 1) {
 								this.acquireSkillTo(skillContainers.iterator().next());
@@ -133,7 +133,7 @@ public class SkillInfoScreen extends SkillBookScreen {
 		}
 		
 		guiGraphics.pose().pushPose();
-		guiGraphics.pose().translate(0.0D, 0.0D, 1000.0D);
+		//guiGraphics.pose().translate(0.0D, 0.0D, 1000.0D);
 		
 		super.render(guiGraphics, mouseX, mouseY, partialTick, asBackground);
 		
@@ -145,14 +145,14 @@ public class SkillInfoScreen extends SkillBookScreen {
 	@Override
 	protected void acquireSkillTo(SkillContainer skillContainer) {
 		skillContainer.setSkill(this.skill);
-		EpicFightNetworkManager.sendToServer(new CPChangeSkill(skillContainer.getSlot(), -1, this.skill));
+		EpicFightNetworkManager.sendToServer(new CPChangeSkill(skillContainer.getSlot(), this.skill.holder(), -1));
 		this.minecraft.setScreen(this.parentScreen);
 	}
 	
 	public void onSyncPacketArrived(ClientBoundUnlockNode feedbackPacket) {
 		if (feedbackPacket.closeScreen()) {
-			if (feedbackPacket.askChange() && this.playerpatch.getSkillContainerFor(feedbackPacket.skill()).isEmpty()) {
-				var containers = this.playerpatch.getSkillCapability().getSkillContainersFor(feedbackPacket.skill().getCategory());
+			if (feedbackPacket.askChange() && this.playerpatch.getSkillContainerFor(feedbackPacket.skill().value()).isEmpty()) {
+				var containers = this.playerpatch.getPlayerSkills().getSkillContainersFor(feedbackPacket.skill().value().getCategory());
 				int shortestCooldown = EpicFightGameRules.SKILL_REPLACE_COOLDOWN.getRuleValue(this.playerpatch.getOriginal().level());
 				
 				for (SkillContainer skillContainer : containers) {
@@ -166,12 +166,12 @@ public class SkillInfoScreen extends SkillBookScreen {
 							containers.size() > 1 ? 
 								Component.translatable(
 									EpicSkills.format("gui.%s.messages.change_skill_multiple"),
-									Component.translatable(feedbackPacket.skill().getTranslationKey()).getString()
+									Component.translatable(feedbackPacket.skill().value().getTranslationKey()).getString()
 								) :
 								Component.translatable(
 									EpicSkills.format("gui.%s.messages.change_skill_one"),
 									Component.translatable(containers.iterator().next().getSkill().getTranslationKey()).getString(),
-									Component.translatable(feedbackPacket.skill().getTranslationKey()).getString()
+									Component.translatable(feedbackPacket.skill().value().getTranslationKey()).getString()
 								),
 							this,
 							button -> {
@@ -205,6 +205,12 @@ public class SkillInfoScreen extends SkillBookScreen {
 	
 	@OnlyIn(Dist.CLIENT)
 	private class LearnButton extends Button {
+		protected static final WidgetSprites SPRITES = new WidgetSprites(
+	        ResourceLocation.fromNamespaceAndPath(EpicFightMod.MODID, "widget/skillbook_button"),
+	        ResourceLocation.fromNamespaceAndPath(EpicFightMod.MODID, "widget/skillbook_button_disabled"),
+	        ResourceLocation.fromNamespaceAndPath(EpicFightMod.MODID, "widget/skillbook_button_highlighted")
+	    );
+		
 		private final Tooltip customTooltip;
 		
 		protected LearnButton(Builder builder) {
@@ -216,22 +222,17 @@ public class SkillInfoScreen extends SkillBookScreen {
 		
 		@Override
 		protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+			Minecraft minecraft = Minecraft.getInstance();
 			guiGraphics.setColor(1.0F, 1.0F, 1.0F, this.alpha);
 			RenderSystem.enableBlend();
 			RenderSystem.enableDepthTest();
-			
-			int texX = 106;
 			
 			if (this.isHoveredOrFocused() && this.customTooltip != null && !SkillInfoScreen.this.backgroundMode) {
 				guiGraphics.renderTooltip(font, this.customTooltip.toCharSequence(minecraft), mouseX, mouseY);
 			}
 			
-			if (this.isHoveredOrFocused() || !this.isActive() || SkillInfoScreen.this.backgroundMode) {
-			   texX = 156;
-			}
-			
 			guiGraphics.pose().pushPose();
-			guiGraphics.blitNineSliced(SKILLBOOK_BACKGROUND, this.getX(), this.getY(), this.getWidth(), this.getHeight(), 20, 4, 45, 15, texX, 193);
+			guiGraphics.blitSprite(SPRITES.get(this.active, this.isHoveredOrFocused()), this.getX(), this.getY(), this.getWidth(), this.getHeight());
 			guiGraphics.setColor(1.0F, 1.0F, 1.0F, 1.0F);
 			guiGraphics.pose().popPose();
 			

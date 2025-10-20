@@ -283,7 +283,7 @@
       "ability_points": 6,
       "conditions": {
         "type_specific": {
-          "type": "player",
+          "type": "minecraft:player",
           "stats": [
             {
               "type": "minecraft:killed",

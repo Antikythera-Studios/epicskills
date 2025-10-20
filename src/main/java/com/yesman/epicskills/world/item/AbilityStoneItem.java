@@ -1,7 +1,7 @@
 package com.yesman.epicskills.world.item;
 
+import com.yesman.epicskills.registry.entry.EpicSkillsAttachmentTypes;
 import com.yesman.epicskills.registry.entry.EpicSkillsSounds;
-import com.yesman.epicskills.world.capability.AbilityPoints;
 
 import net.minecraft.stats.Stats;
 import net.minecraft.world.InteractionHand;
@@ -20,7 +20,7 @@ public class AbilityStoneItem extends Item {
 	public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
 		ItemStack itemstack = player.getItemInHand(hand);
 		
-		player.getCapability(AbilityPoints.ABILITY_POINTS).ifPresent(abilityPoints -> {
+		player.getExistingData(EpicSkillsAttachmentTypes.ABILITY_POINTS).ifPresent(abilityPoints -> {
 			abilityPoints.setAbilityPoints(abilityPoints.getAbilityPoints() + 1);
 			player.playSound(EpicSkillsSounds.GAIN_ABILITY_POINTS.get(), 1.0F, 1.0F);
 		});

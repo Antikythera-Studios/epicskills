@@ -12,13 +12,11 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import com.yesman.epicskills.EpicSkills;
-import com.yesman.epicskills.network.NetworkManager;
+import com.yesman.epicskills.neoforge.attachment.SkillTreeProgression.NodeState;
 import com.yesman.epicskills.network.client.ClientBoundReloadSkillTree;
 import com.yesman.epicskills.network.client.ClientBoundUnlockNode;
+import com.yesman.epicskills.registry.entry.EpicSkillsAttachmentTypes;
 import com.yesman.epicskills.skilltree.SkillTree;
-import com.yesman.epicskills.world.capability.AbilityPoints;
-import com.yesman.epicskills.world.capability.SkillTreeProgression;
-import com.yesman.epicskills.world.capability.SkillTreeProgression.NodeState;
 
 import net.minecraft.commands.CommandBuildContext;
 import net.minecraft.commands.CommandSourceStack;
@@ -30,6 +28,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.GameRules;
 import yesman.epicfight.api.utils.MutableBoolean;
+import yesman.epicfight.network.EpicFightNetworkManager;
 import yesman.epicfight.server.commands.arguments.SkillArgument;
 import yesman.epicfight.skill.Skill;
 
@@ -213,7 +212,7 @@ public class PlayerSkillTreeCommand {
 		);
 	}
 	
-	private static int proccessSkillTreeCommand(CommandContext<CommandSourceStack> command, Collection<ServerPlayer> players, @Nullable Holder.Reference<SkillTree> skillTree, @Nullable Skill skill, Action action, boolean force, boolean unequip) throws CommandSyntaxException {
+	private static int proccessSkillTreeCommand(CommandContext<CommandSourceStack> command, Collection<ServerPlayer> players, @Nullable Holder.Reference<SkillTree> skillTree, @Nullable Holder<Skill> skill, Action action, boolean force, boolean unequip) throws CommandSyntaxException {
 		int done = 0;
 		
 		if (players.isEmpty()) {
@@ -294,22 +293,22 @@ public class PlayerSkillTreeCommand {
 	}
 	
 	private static boolean resetTree(ServerPlayer player) {
-		player.getCapability(SkillTreeProgression.SKILL_TREE_PROGRESSION).ifPresent(skillTreeProgression -> {
+		player.getExistingData(EpicSkillsAttachmentTypes.SKILL_TREE_PROGRESSION).ifPresent(skillTreeProgression -> {
 			skillTreeProgression.reload(false);
-			NetworkManager.sendToPlayer(new ClientBoundReloadSkillTree(false), player);
+			EpicFightNetworkManager.sendToPlayer(new ClientBoundReloadSkillTree(false), player);
 		});
 		
-		return player.getCapability(SkillTreeProgression.SKILL_TREE_PROGRESSION).isPresent();
+		return player.getExistingData(EpicSkillsAttachmentTypes.SKILL_TREE_PROGRESSION).isPresent();
 	}
 	
-	private static boolean unlockTreeNode(ServerPlayer player, Holder.Reference<SkillTree> skillTree, Skill skill, boolean force) {
+	private static boolean unlockTreeNode(ServerPlayer player, Holder.Reference<SkillTree> skillTree, Holder<Skill> skill, boolean force) {
 		MutableBoolean succeess = new MutableBoolean(false);
 		
-		player.getCapability(SkillTreeProgression.SKILL_TREE_PROGRESSION).ifPresent(skillTreeProgression -> {
-			player.getCapability(AbilityPoints.ABILITY_POINTS).ifPresent(abilityPoints -> {
-				if (force || skillTreeProgression.canUnlockNode(skillTree, skill, abilityPoints, false)) {
-					skillTreeProgression.unlockNode(skillTree, skill);
-					NetworkManager.sendToPlayer(new ClientBoundUnlockNode(skillTree.key(), skill, NodeState.UNLOCKED, false, false, false, false), player);
+		player.getExistingData(EpicSkillsAttachmentTypes.SKILL_TREE_PROGRESSION).ifPresent(skillTreeProgression -> {
+			player.getExistingData(EpicSkillsAttachmentTypes.ABILITY_POINTS).ifPresent(abilityPoints -> {
+				if (force || skillTreeProgression.canUnlockNode(skillTree, skill.value(), abilityPoints, false)) {
+					skillTreeProgression.unlockNode(skillTree, skill.value());
+					EpicFightNetworkManager.sendToPlayer(new ClientBoundUnlockNode(skillTree.key(), skill, NodeState.UNLOCKED, false, false, false, false), player);
 					succeess.set(true);
 				}
 			});
@@ -318,13 +317,13 @@ public class PlayerSkillTreeCommand {
 		return succeess.value();
 	}
 	
-	private static boolean lockTreeNode(ServerPlayer player, Holder.Reference<SkillTree> skillTree, Skill skill, boolean force, boolean unequip) {
+	private static boolean lockTreeNode(ServerPlayer player, Holder.Reference<SkillTree> skillTree, Holder<Skill> skill, boolean force, boolean unequip) {
 		MutableBoolean succeess = new MutableBoolean(false);
 		
-		player.getCapability(SkillTreeProgression.SKILL_TREE_PROGRESSION).ifPresent(skillTreeProgression -> {
-			if (force || skillTreeProgression.canLockNode(skillTree, skill)) {
-				skillTreeProgression.lockNode(skillTree, skill, unequip);
-				NetworkManager.sendToPlayer(new ClientBoundUnlockNode(skillTree.key(), skill, NodeState.LOCKED, false, unequip, false, false), player);
+		player.getExistingData(EpicSkillsAttachmentTypes.SKILL_TREE_PROGRESSION).ifPresent(skillTreeProgression -> {
+			if (force || skillTreeProgression.canLockNode(skillTree, skill.value())) {
+				skillTreeProgression.lockNode(skillTree, skill.value(), unequip);
+				EpicFightNetworkManager.sendToPlayer(new ClientBoundUnlockNode(skillTree.key(), skill, NodeState.LOCKED, false, unequip, false, false), player);
 				succeess.set(true);
 			}
 		});
@@ -335,7 +334,7 @@ public class PlayerSkillTreeCommand {
 	private static boolean unlockTree(ServerPlayer player, Holder.Reference<SkillTree> skillTree) {
 		MutableBoolean succeess = new MutableBoolean(false);
 		
-		player.getCapability(SkillTreeProgression.SKILL_TREE_PROGRESSION).ifPresent(skillTreeProgression -> {
+		player.getExistingData(EpicSkillsAttachmentTypes.SKILL_TREE_PROGRESSION).ifPresent(skillTreeProgression -> {
 			skillTreeProgression.unlockTree(skillTree);
 			succeess.set(true);
 		});
@@ -346,7 +345,7 @@ public class PlayerSkillTreeCommand {
 	private static boolean lockTree(ServerPlayer player, Holder.Reference<SkillTree> skillTree, boolean force, boolean unequip) {
 		MutableBoolean succeess = new MutableBoolean(false);
 		
-		player.getCapability(SkillTreeProgression.SKILL_TREE_PROGRESSION).ifPresent(skillTreeProgression -> {
+		player.getExistingData(EpicSkillsAttachmentTypes.SKILL_TREE_PROGRESSION).ifPresent(skillTreeProgression -> {
 			if (force || skillTreeProgression.canLockTree(skillTree)) {
 				skillTreeProgression.lockTree(skillTree, unequip);
 				succeess.set(true);
@@ -363,47 +362,47 @@ public class PlayerSkillTreeCommand {
 	public enum Action {
 		RESET(
 			"reset",
-			(CommandContext<CommandSourceStack> command, Collection<ServerPlayer> players, @Nullable Holder.Reference<SkillTree> skillTree, @Nullable Skill skill, int successCount) -> {
+			(CommandContext<CommandSourceStack> command, Collection<ServerPlayer> players, @Nullable Holder.Reference<SkillTree> skillTree, @Nullable Holder<Skill> skill, int successCount) -> {
 				return new Object[] { players.iterator().next().getDisplayName() };
 			},
-			(CommandContext<CommandSourceStack> command, Collection<ServerPlayer> players, @Nullable Holder.Reference<SkillTree> skillTree, @Nullable Skill skill, int successCount) -> {
+			(CommandContext<CommandSourceStack> command, Collection<ServerPlayer> players, @Nullable Holder.Reference<SkillTree> skillTree, @Nullable Holder<Skill> skill, int successCount) -> {
 				return new Object[] { String.valueOf(successCount) };
 			}
 		),
 		UNLOCK_TREE(
 			"unlock_tree",
-			(CommandContext<CommandSourceStack> command, Collection<ServerPlayer> players, @Nullable Holder.Reference<SkillTree> skillTree, @Nullable Skill skill, int successCount) -> {
+			(CommandContext<CommandSourceStack> command, Collection<ServerPlayer> players, @Nullable Holder.Reference<SkillTree> skillTree, @Nullable Holder<Skill> skill, int successCount) -> {
 				return new Object[] { Component.translatable(SkillTree.toDescriptionId(skillTree.key())).getString(), players.iterator().next().getDisplayName() };
 			},
-			(CommandContext<CommandSourceStack> command, Collection<ServerPlayer> players, @Nullable Holder.Reference<SkillTree> skillTree, @Nullable Skill skill, int successCount) -> {
+			(CommandContext<CommandSourceStack> command, Collection<ServerPlayer> players, @Nullable Holder.Reference<SkillTree> skillTree, @Nullable Holder<Skill> skill, int successCount) -> {
 				return new Object[] { Component.translatable(SkillTree.toDescriptionId(skillTree.key())).getString(), String.valueOf(successCount) };
 			}
 		),
 		LOCK_TREE(
 			"lock_tree",
-			(CommandContext<CommandSourceStack> command, Collection<ServerPlayer> players, @Nullable Holder.Reference<SkillTree> skillTree, @Nullable Skill skill, int successCount) -> {
+			(CommandContext<CommandSourceStack> command, Collection<ServerPlayer> players, @Nullable Holder.Reference<SkillTree> skillTree, @Nullable Holder<Skill> skill, int successCount) -> {
 				return new Object[] { Component.translatable(SkillTree.toDescriptionId(skillTree.key())).getString(), players.iterator().next().getDisplayName() };
 			},
-			(CommandContext<CommandSourceStack> command, Collection<ServerPlayer> players, @Nullable Holder.Reference<SkillTree> skillTree, @Nullable Skill skill, int successCount) -> {
+			(CommandContext<CommandSourceStack> command, Collection<ServerPlayer> players, @Nullable Holder.Reference<SkillTree> skillTree, @Nullable Holder<Skill> skill, int successCount) -> {
 				return new Object[] { Component.translatable(SkillTree.toDescriptionId(skillTree.key())).getString(), String.valueOf(successCount) };
 			}
 		),
 		UNLOCK(
 			"unlock",
-			(CommandContext<CommandSourceStack> command, Collection<ServerPlayer> players, @Nullable Holder.Reference<SkillTree> skillTree, @Nullable Skill skill, int successCount) -> {
-				return new Object[] { Component.translatable(skill.getTranslationKey()).getString(), Component.translatable(SkillTree.toDescriptionId(skillTree.key())).getString(), players.iterator().next().getDisplayName() };
+			(CommandContext<CommandSourceStack> command, Collection<ServerPlayer> players, @Nullable Holder.Reference<SkillTree> skillTree, @Nullable Holder<Skill> skill, int successCount) -> {
+				return new Object[] { Component.translatable(skill.value().getTranslationKey()).getString(), Component.translatable(SkillTree.toDescriptionId(skillTree.key())).getString(), players.iterator().next().getDisplayName() };
 			},
-			(CommandContext<CommandSourceStack> command, Collection<ServerPlayer> players, @Nullable Holder.Reference<SkillTree> skillTree, @Nullable Skill skill, int successCount) -> {
-				return new Object[] { Component.translatable(skill.getTranslationKey()).getString(), Component.translatable(SkillTree.toDescriptionId(skillTree.key())).getString(), String.valueOf(successCount) };
+			(CommandContext<CommandSourceStack> command, Collection<ServerPlayer> players, @Nullable Holder.Reference<SkillTree> skillTree, @Nullable Holder<Skill> skill, int successCount) -> {
+				return new Object[] { Component.translatable(skill.value().getTranslationKey()).getString(), Component.translatable(SkillTree.toDescriptionId(skillTree.key())).getString(), String.valueOf(successCount) };
 			}
 		),
 		LOCK(
 			"lock",
-			(CommandContext<CommandSourceStack> command, Collection<ServerPlayer> players, @Nullable Holder.Reference<SkillTree> skillTree, @Nullable Skill skill, int successCount) -> {
-				return new Object[] { Component.translatable(skill.getTranslationKey()).getString(), Component.translatable(SkillTree.toDescriptionId(skillTree.key())).getString(), players.iterator().next().getDisplayName() };
+			(CommandContext<CommandSourceStack> command, Collection<ServerPlayer> players, @Nullable Holder.Reference<SkillTree> skillTree, @Nullable Holder<Skill> skill, int successCount) -> {
+				return new Object[] { Component.translatable(skill.value().getTranslationKey()).getString(), Component.translatable(SkillTree.toDescriptionId(skillTree.key())).getString(), players.iterator().next().getDisplayName() };
 			},
-			(CommandContext<CommandSourceStack> command, Collection<ServerPlayer> players, @Nullable Holder.Reference<SkillTree> skillTree, @Nullable Skill skill, int successCount) -> {
-				return new Object[] { Component.translatable(skill.getTranslationKey()).getString(), Component.translatable(SkillTree.toDescriptionId(skillTree.key())).getString(), String.valueOf(successCount) };
+			(CommandContext<CommandSourceStack> command, Collection<ServerPlayer> players, @Nullable Holder.Reference<SkillTree> skillTree, @Nullable Holder<Skill> skill, int successCount) -> {
+				return new Object[] { Component.translatable(skill.value().getTranslationKey()).getString(), Component.translatable(SkillTree.toDescriptionId(skillTree.key())).getString(), String.valueOf(successCount) };
 			}
 		);
 		
@@ -420,6 +419,6 @@ public class PlayerSkillTreeCommand {
 	
 	@FunctionalInterface
 	public interface TranslatableKeyParameters {
-		public Object[] parameters(CommandContext<CommandSourceStack> command, Collection<ServerPlayer> players, @Nullable Holder.Reference<SkillTree> skillTree, @Nullable Skill skill, int successCount);
+		public Object[] parameters(CommandContext<CommandSourceStack> command, Collection<ServerPlayer> players, @Nullable Holder.Reference<SkillTree> skillTree, @Nullable Holder<Skill> skill, int successCount);
 	}
 }

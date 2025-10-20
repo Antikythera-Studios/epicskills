@@ -5,11 +5,11 @@ import com.yesman.epicskills.common.data.SkillTreeProvider;
 import com.yesman.epicskills.data.provider.EpicSkillsSkillTreeProvider;
 
 import net.minecraft.data.DataProvider;
-import net.minecraftforge.data.event.GatherDataEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.data.event.GatherDataEvent;
 
-@Mod.EventBusSubscriber(modid = EpicSkills.MODID, bus = Mod.EventBusSubscriber.Bus.MOD)
+@EventBusSubscriber(modid = EpicSkills.MODID)
 public final class DataEvents {
 	private DataEvents() {}
 	

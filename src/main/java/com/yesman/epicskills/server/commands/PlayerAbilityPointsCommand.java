@@ -9,7 +9,8 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import com.yesman.epicskills.EpicSkills;
-import com.yesman.epicskills.world.capability.AbilityPoints;
+import com.yesman.epicskills.neoforge.attachment.AbilityPoints;
+import com.yesman.epicskills.registry.entry.EpicSkillsAttachmentTypes;
 
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -37,7 +38,7 @@ public class PlayerAbilityPointsCommand {
 									)
 									.executes(command -> {
 										ServerPlayer player = EntityArgument.getPlayer(command, "target");
-										AbilityPoints abilityPoints = player.getCapability(AbilityPoints.ABILITY_POINTS).orElse(null);
+										AbilityPoints abilityPoints = player.getExistingData(EpicSkillsAttachmentTypes.ABILITY_POINTS).orElse(null);
 										
 										if (abilityPoints != null) {
 											command.getSource().sendSuccess(() -> {
@@ -162,7 +163,7 @@ public class PlayerAbilityPointsCommand {
 			throw EXCEPTION_NO_PLAYERS_FOUND.create();
 		} else {
 			if (done == 1) {
-				players.iterator().next().getCapability(AbilityPoints.ABILITY_POINTS).ifPresent(abilitypoints -> {
+				players.iterator().next().getExistingData(EpicSkillsAttachmentTypes.ABILITY_POINTS).ifPresent(abilitypoints -> {
 					command.getSource().sendSuccess(wrap(Component.translatable("commands." + EpicSkills.MODID + ".abilitypoints.success.single", players.iterator().next().getDisplayName(), String.valueOf(abilitypoints.getAbilityPoints()))), true);
 				});
 			} else {
@@ -180,30 +181,30 @@ public class PlayerAbilityPointsCommand {
 	}
 	
 	private static boolean setAbilityPoints(ServerPlayer player, int value) {
-		player.getCapability(AbilityPoints.ABILITY_POINTS).ifPresent(abilitypoints -> {
+		player.getExistingData(EpicSkillsAttachmentTypes.ABILITY_POINTS).ifPresent(abilitypoints -> {
 			abilitypoints.setAbilityPoints(value);
 			abilitypoints.markDirty();
 		});
 		
-		return player.getCapability(AbilityPoints.ABILITY_POINTS).isPresent();
+		return player.getExistingData(EpicSkillsAttachmentTypes.ABILITY_POINTS).isPresent();
 	}
 	
 	private static boolean addAbilityPoints(ServerPlayer player, int value) {
-		player.getCapability(AbilityPoints.ABILITY_POINTS).ifPresent(abilitypoints -> {
+		player.getExistingData(EpicSkillsAttachmentTypes.ABILITY_POINTS).ifPresent(abilitypoints -> {
 			abilitypoints.setAbilityPoints(abilitypoints.getAbilityPoints() + value);
 			abilitypoints.markDirty();
 		});
 		
-		return player.getCapability(AbilityPoints.ABILITY_POINTS).isPresent();
+		return player.getExistingData(EpicSkillsAttachmentTypes.ABILITY_POINTS).isPresent();
 	}
 	
 	public static boolean resetExpRequirement(ServerPlayer player) {
-		player.getCapability(AbilityPoints.ABILITY_POINTS).ifPresent(abilitypoints -> {
+		player.getExistingData(EpicSkillsAttachmentTypes.ABILITY_POINTS).ifPresent(abilitypoints -> {
 			abilitypoints.setRequiredExp(AbilityPoints.INIT_EXP_REQUIREMENT);
 			abilitypoints.markDirty();
 		});
 		
-		return player.getCapability(AbilityPoints.ABILITY_POINTS).isPresent();
+		return player.getExistingData(EpicSkillsAttachmentTypes.ABILITY_POINTS).isPresent();
 	}
 	
 	private static <T> Supplier<T> wrap(T value) {

@@ -4,12 +4,12 @@ import com.mojang.blaze3d.platform.InputConstants;
 import com.yesman.epicskills.EpicSkills;
 
 import net.minecraft.client.KeyMapping;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 
-@Mod.EventBusSubscriber(modid = EpicSkills.MODID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.MOD)
+@EventBusSubscriber(modid = EpicSkills.MODID, value = Dist.CLIENT)
 public class EpicSkillsKeyMappings {
 	public static final KeyMapping OPEN_SKILL_TREE = new KeyMapping(EpicSkills.format("key.%s.open_skill_tree"), InputConstants.KEY_N, EpicSkills.format("key.%s.gui"));
 	

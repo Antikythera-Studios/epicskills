@@ -6,9 +6,9 @@ import org.jetbrains.annotations.Nullable;
 
 import com.google.gson.JsonElement;
 import com.mojang.serialization.Codec;
+import com.mojang.serialization.JsonOps;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.yesman.epicskills.EpicSkills;
-import com.yesman.epicskills.util.JsonUtil;
 
 import net.minecraft.advancements.critereon.EntityPredicate;
 import net.minecraft.core.Registry;
@@ -27,7 +27,7 @@ public record SkillTree(Vec3i menuBarColor, @Nullable EntityPredicate conditions
 		instance.group(
 			Vec3i.CODEC.optionalFieldOf("menu_color").forGetter(skilltree -> Optional.ofNullable(skilltree.menuBarColor())),
 			ExtraCodecs.JSON.optionalFieldOf("conditions").forGetter(skilltree -> {
-				JsonElement serialized = skilltree.conditions() == null ? null : JsonUtil.removeNullElements(skilltree.conditions().serializeToJson());
+				JsonElement serialized = skilltree.conditions() == null ? null : EntityPredicate.CODEC.encodeStart(JsonOps.INSTANCE, skilltree.conditions()).getOrThrow();
 				return Optional.ofNullable(serialized);
 			}),
 			Codec.STRING.optionalFieldOf("unlock_tip").forGetter(node -> node.unlockTip() == null ? Optional.empty() : Optional.of(((TranslatableContents)((MutableComponent)node.unlockTip()).getContents()).getKey())),
@@ -38,7 +38,7 @@ public record SkillTree(Vec3i menuBarColor, @Nullable EntityPredicate conditions
 		)
 		.apply(instance, (menuBarColorOpt, conditions, unlockTip, lockedOpt, hiddenWhenLockedOpt, disabledOpt, priorityOpt) -> {
 			JsonElement entityPredicatesJson = conditions.orElse(null);
-			EntityPredicate entityPredicates = entityPredicatesJson == null ? null : EntityPredicate.fromJson(entityPredicatesJson);
+			EntityPredicate entityPredicates = entityPredicatesJson == null ? null : EntityPredicate.CODEC.decode(JsonOps.INSTANCE, entityPredicatesJson).getOrThrow().getFirst();
 			return new SkillTree(menuBarColorOpt.orElse(new Vec3i(255, 255, 255)), entityPredicates, unlockTip.isPresent() ? Component.translatable(unlockTip.get()) : null, lockedOpt.orElse(false), hiddenWhenLockedOpt.orElse(false), disabledOpt.orElse(false), priorityOpt.orElse(100));
 		})
 	);

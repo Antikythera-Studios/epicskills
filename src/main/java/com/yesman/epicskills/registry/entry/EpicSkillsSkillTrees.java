@@ -1,11 +1,13 @@
 package com.yesman.epicskills.registry.entry;
 
 import com.yesman.epicskills.EpicSkills;
+import com.yesman.epicskills.neoforge.attachment.SkillTreeProgression;
 import com.yesman.epicskills.skilltree.SkillTree;
-import com.yesman.epicskills.world.capability.SkillTreeProgression;
 
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
+import yesman.epicfight.skill.Skill;
 
 /**
  * Resource keys of skill trees that is provided by this addon itself

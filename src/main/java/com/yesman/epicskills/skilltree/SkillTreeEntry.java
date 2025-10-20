@@ -7,9 +7,9 @@ import org.jetbrains.annotations.Nullable;
 
 import com.google.gson.JsonElement;
 import com.mojang.serialization.Codec;
+import com.mojang.serialization.JsonOps;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.yesman.epicskills.EpicSkills;
-import com.yesman.epicskills.util.JsonUtil;
 
 import net.minecraft.Util;
 import net.minecraft.advancements.critereon.EntityPredicate;
@@ -20,11 +20,13 @@ import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.ExtraCodecs;
-import yesman.epicfight.api.data.reloader.SkillManager;
 import yesman.epicfight.api.utils.math.Vec2i;
+import yesman.epicfight.registry.EpicFightRegistries;
 import yesman.epicfight.skill.Skill;
 
 public record SkillTreeEntry(List<Node> nodes, int workPriority) {
+	public static final Codec<Skill> SKILL_CODEC = EpicFightRegistries.SKILL.byNameCodec();
+	
 	public static final Codec<Vec2i> VEC2_INT_CODEC = Codec.INT.listOf()
 		.comapFlatMap(instance -> {
 			return Util.fixedSize(instance, 2).map(result -> {
@@ -55,7 +57,7 @@ public record SkillTreeEntry(List<Node> nodes, int workPriority) {
 	public static record ParentLink(Skill parentSkill, @Nullable List<Vec2i> controlPoints) {
 		public static final Codec<ParentLink> CODEC = RecordCodecBuilder.create(instance ->
 			instance.group(
-				SkillManager.CODEC.fieldOf("skill").forGetter(ParentLink::parentSkill),
+				SKILL_CODEC.fieldOf("skill").forGetter(ParentLink::parentSkill),
 				SkillTreeEntry.VEC2_INT_CODEC.listOf().optionalFieldOf("control_points").forGetter(object -> Optional.ofNullable(object.controlPoints()))
 			)
 			.apply(instance, (skill, controlPointsOpt) -> new ParentLink(skill, controlPointsOpt.orElse(null)))
@@ -65,10 +67,10 @@ public record SkillTreeEntry(List<Node> nodes, int workPriority) {
 	public static record Node(Skill skill, @Nullable List<ParentLink> parents, @Nullable EntityPredicate unlockCondition, boolean hasCustomUnlockCondition, @Nullable Component unlockTip, int requiredAbilityPoints, Vec2i positionInScreen, boolean hidden, @Nullable ResourceLocation importFrom) {
 		public static final Codec<Node> CODEC = RecordCodecBuilder.create(instance ->
 			instance.group(
-				SkillManager.CODEC.fieldOf("skill").forGetter(Node::skill),
+				SKILL_CODEC.fieldOf("skill").forGetter(Node::skill),
 				ParentLink.CODEC.listOf().optionalFieldOf("parents").forGetter(node -> Optional.ofNullable(node.parents())),
 				ExtraCodecs.JSON.optionalFieldOf("conditions").forGetter(node -> {
-					JsonElement serialized = node.unlockCondition() == null ? null : JsonUtil.removeNullElements(node.unlockCondition().serializeToJson());
+					JsonElement serialized = node.unlockCondition() == null ? null : EntityPredicate.CODEC.encodeStart(JsonOps.INSTANCE, node.unlockCondition()).getOrThrow();
 					return Optional.ofNullable(serialized);
 				}),
 				Codec.BOOL.optionalFieldOf("custom_condition").forGetter(node -> Optional.ofNullable(node.hidden())),
@@ -80,7 +82,7 @@ public record SkillTreeEntry(List<Node> nodes, int workPriority) {
 			)
 			.apply(instance, (skill, parentOpt, conditions, hasCustomCondition, unlockTip, requiredAbilityPoints, positionInScreen, hiddenOpt, importFromOpt) -> {
 				JsonElement entityPredicatesJson = conditions.orElse(null);
-				EntityPredicate entityPredicates = entityPredicatesJson == null ? null : EntityPredicate.fromJson(entityPredicatesJson);
+				EntityPredicate entityPredicates = entityPredicatesJson == null ? null : EntityPredicate.CODEC.decode(JsonOps.INSTANCE, entityPredicatesJson).getOrThrow().getFirst();
 				return new Node(skill, parentOpt.orElse(null), entityPredicates, hasCustomCondition.orElse(false), unlockTip.isPresent() ? Component.translatable(unlockTip.get()) : null, requiredAbilityPoints.orElse(0), positionInScreen, hiddenOpt.orElse(false), importFromOpt.orElse(null));
 			})
 		);

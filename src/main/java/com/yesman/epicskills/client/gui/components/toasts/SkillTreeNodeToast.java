@@ -4,33 +4,35 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.toasts.Toast;
 import net.minecraft.client.gui.components.toasts.ToastComponent;
+import net.minecraft.client.gui.components.toasts.TutorialToast;
+import net.minecraft.core.Holder;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.ComponentUtils;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 import yesman.epicfight.skill.Skill;
 
 @OnlyIn(Dist.CLIENT)
 public class SkillTreeNodeToast implements Toast {
-	private final Skill skill;
+	private final Holder<Skill> skill;
 	
-	public SkillTreeNodeToast(Skill skill) {
+	public SkillTreeNodeToast(Holder<Skill> skill) {
 		this.skill = skill;
 	}
 	
 	@Override
 	public Visibility render(GuiGraphics guiGraphics, ToastComponent toastComponent, long timeSinceLastVisible) {
-		if (this.skill == null) {
+		if (this.skill == null || this.skill.value() == null) {
 			return Toast.Visibility.HIDE;
 		}
 		
-		guiGraphics.blit(TEXTURE, 0, 0, 0, 0, this.width(), this.height());
-		guiGraphics.blit(this.skill.getSkillTexture(), 5, 3, 26, 26, 0.0F, 0.0F, 32, 32, 32, 32);
+		guiGraphics.blitSprite(TutorialToast.BACKGROUND_SPRITE, 0, 0, this.width(), this.height());
+		guiGraphics.blit(this.skill.value().getSkillTexture(), 5, 3, 26, 26, 0.0F, 0.0F, 32, 32, 32, 32);
 		
 		Component line1 = Component.translatable("chat.epicskills.unlock_notification");
 		Component line2 = ComponentUtils.wrapInSquareBrackets(
 				Component.
-					translatable(this.skill.getTranslationKey())
+					translatable(this.skill.value().getTranslationKey())
 			)
 			.withStyle(ChatFormatting.GOLD);
 		

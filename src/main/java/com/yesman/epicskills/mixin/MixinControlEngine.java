@@ -24,16 +24,16 @@ public class MixinControlEngine {
 	private Minecraft minecraft;
 	
 	@Shadow(remap = false)
-	private LocalPlayerPatch playerPatch;
+	private LocalPlayerPatch playerpatch;
 	
 	@Shadow(remap = false)
 	private static boolean isKeyPressed(KeyMapping key, boolean eventCheck) { throw new AbstractMethodError(); }
 	
 	@Inject(at = @At(value = "HEAD"), method = "handleEpicFightKeyMappings()V", remap = false)
 	public void epicskills$handleEpicFightKeyMappings(CallbackInfo callbackInfo) {
-		if (this.playerPatch != null) {
+		if (this.playerpatch != null) {
 			if (isKeyPressed(EpicSkillsKeyMappings.OPEN_SKILL_TREE, false)) {
-				SkillTreeScreen skilltreescreen = new SkillTreeScreen(this.playerPatch);
+				SkillTreeScreen skilltreescreen = new SkillTreeScreen(this.playerpatch);
 				
 				if (!skilltreescreen.discarded()) {
 					this.minecraft.setScreen(skilltreescreen);

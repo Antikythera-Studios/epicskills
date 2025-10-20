@@ -15,13 +15,14 @@ import net.minecraft.stats.Stats;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.Level;
 import yesman.epicfight.api.utils.math.Vec2i;
-import yesman.epicfight.gameasset.EpicFightSkills;
+import yesman.epicfight.registry.entries.EpicFightSkills;
 
 public class EpicSkillsSkillTreeProvider extends SkillTreeProvider {
 	public EpicSkillsSkillTreeProvider(PackOutput pOutput) {
 		super(pOutput);
 	}
 
+	@SuppressWarnings("deprecation")
 	@Override
 	protected void buildSkillTreePages(Consumer<SkillTreePageBuilder> writer) {
 		writer.accept(
@@ -116,14 +117,14 @@ public class EpicSkillsSkillTreeProvider extends SkillTreeProvider {
 					.position(450, 230)
 					.abilityPointsRequirement(3)
 				.done()
-				.newNode(EpicFightSkills.METEOR_STRIKE)
+				.newNode(EpicFightSkills.METEOR_SLAM)
 					.addParent(EpicFightSkills.IMPACT_GUARD, new Vec2i(330, 330))
 					.addParent(EpicFightSkills.DEMOLITION_LEAP, new Vec2i(390, 330))
 					.unlockCondition(
 						EntityPredicate.Builder.entity()
 							.subPredicate(
 								PlayerPredicate.Builder.player()
-									.addStat(Stats.ENTITY_KILLED.get(EntityType.ENDER_DRAGON), MinMaxBounds.Ints.atLeast(1))
+									.addStat(Stats.ENTITY_KILLED, EntityType.ENDER_DRAGON.builtInRegistryHolder(), MinMaxBounds.Ints.atLeast(1))
 								.build()
 							)
 						.build()
@@ -142,7 +143,6 @@ public class EpicSkillsSkillTreeProvider extends SkillTreeProvider {
 						.located(
 							LocationPredicate.Builder.location()
 								.setDimension(Level.NETHER)
-							.build()
 						)
 					.build()
 				)

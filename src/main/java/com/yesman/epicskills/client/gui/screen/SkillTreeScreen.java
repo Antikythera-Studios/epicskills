@@ -22,16 +22,16 @@ import com.mojang.datafixers.util.Pair;
 import com.yesman.epicskills.EpicSkills;
 import com.yesman.epicskills.client.gui.screen.SkillTreeScreen.TreePage.NodeButton;
 import com.yesman.epicskills.client.gui.widget.HoverSoundPlayer;
-import com.yesman.epicskills.network.NetworkManager;
+import com.yesman.epicskills.neoforge.attachment.AbilityPoints;
+import com.yesman.epicskills.neoforge.attachment.SkillTreeProgression;
+import com.yesman.epicskills.neoforge.attachment.SkillTreeProgression.ImportedNode;
+import com.yesman.epicskills.neoforge.attachment.SkillTreeProgression.NodeState;
+import com.yesman.epicskills.neoforge.attachment.SkillTreeProgression.TopDownTreeNode;
 import com.yesman.epicskills.network.client.ClientBoundSetAbilityPoints;
 import com.yesman.epicskills.network.server.ServerBoundConvertAbilityPointRequest;
+import com.yesman.epicskills.registry.entry.EpicSkillsAttachmentTypes;
 import com.yesman.epicskills.registry.entry.EpicSkillsSounds;
 import com.yesman.epicskills.skilltree.SkillTree;
-import com.yesman.epicskills.world.capability.AbilityPoints;
-import com.yesman.epicskills.world.capability.SkillTreeProgression;
-import com.yesman.epicskills.world.capability.SkillTreeProgression.ImportedNode;
-import com.yesman.epicskills.world.capability.SkillTreeProgression.NodeState;
-import com.yesman.epicskills.world.capability.SkillTreeProgression.TopDownTreeNode;
 
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
@@ -39,7 +39,9 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractButton;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Renderable;
 import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.gui.components.WidgetSprites;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.layouts.LayoutElement;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
@@ -59,16 +61,17 @@ import net.minecraft.util.FastColor.ARGB32;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 import yesman.epicfight.api.utils.ParseUtil;
 import yesman.epicfight.api.utils.math.Vec2i;
 import yesman.epicfight.client.gui.screen.SkillEditScreen;
 import yesman.epicfight.client.world.capabilites.entitypatch.player.LocalPlayerPatch;
 import yesman.epicfight.main.EpicFightMod;
+import yesman.epicfight.network.EpicFightNetworkManager;
+import yesman.epicfight.registry.entries.EpicFightItems;
 import yesman.epicfight.skill.Skill;
-import yesman.epicfight.world.capabilities.skill.CapabilitySkill;
-import yesman.epicfight.world.item.EpicFightItems;
+import yesman.epicfight.world.capabilities.skill.PlayerSkills;
 
 @OnlyIn(Dist.CLIENT)
 public class SkillTreeScreen extends Screen implements BackgroundRenderableScreen {
@@ -81,7 +84,7 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
 	});
 	
 	private final Player player;
-	private final CapabilitySkill playerSkills;
+	private final PlayerSkills playerSkills;
 	private final AbilityPoints playerAbilityPoints;
 	private final SkillTreeProgression playerSkillTreeProgression;
 	
@@ -106,33 +109,32 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
 		super(Component.translatable("gui." + EpicSkills.MODID + ".skill_tree"));
 		
 		this.player = playerpatch.getOriginal();
-		this.playerSkills = playerpatch.getSkillCapability();
-		this.playerAbilityPoints = playerpatch.getOriginal().getCapability(AbilityPoints.ABILITY_POINTS).orElseThrow(() -> new NoSuchElementException("Player doesn't have ability point capability"));
-		this.playerSkillTreeProgression = playerpatch.getOriginal().getCapability(SkillTreeProgression.SKILL_TREE_PROGRESSION).orElseThrow(() -> new NoSuchElementException("Player doesn't have skill tree capability"));
+		this.playerSkills = playerpatch.getPlayerSkills();
+		this.playerAbilityPoints = playerpatch.getOriginal().getExistingData(EpicSkillsAttachmentTypes.ABILITY_POINTS).orElseThrow(() -> new NoSuchElementException("Player doesn't have ability point capability"));
+		this.playerSkillTreeProgression = playerpatch.getOriginal().getExistingData(EpicSkillsAttachmentTypes.SKILL_TREE_PROGRESSION).orElseThrow(() -> new NoSuchElementException("Player doesn't have skill tree capability"));
 		
 		HolderLookup<SkillTree> skillTreeLookup = this.player.level().holderLookup(SkillTree.SKILL_TREE_REGISTRY_KEY);
 		MutableInt index = new MutableInt(0);
 		
 		skillTreeLookup.listElements().sorted((page1, page2) -> {
-			if (page1.get().priority() == page2.get().priority()) {
-				return page1.key().location().toString().compareTo(page2.key().location().toString());
+			if (page1.value().priority() == page2.value().priority()) {
+				return page1.getRegisteredName().compareTo(page2.getRegisteredName());
 			}
 			
-			return Integer.compare(page1.get().priority(), page2.get().priority());
+			return Integer.compare(page1.value().priority(), page2.value().priority());
 		}).forEach(skillTree -> {
-			if (skillTree.get().disabled()) {
+			if (skillTree.value().disabled()) {
 				return;
 			}
 			
 			SkillTreeProgression.TreeState treeState = this.playerSkillTreeProgression.getTreeState(skillTree);
 			
-			if (treeState != SkillTreeProgression.TreeState.LOCKED || !skillTree.get().hiddenWhenLocked()) {
+			if (treeState != SkillTreeProgression.TreeState.LOCKED || !skillTree.value().hiddenWhenLocked()) {
 				this.skillTreePages.put(index.intValue(), new TreePage(this.playerSkillTreeProgression.getNodes(skillTree), skillTree));
 				this.skillTreeIndices.put(skillTree, index.intValue());
 				
 				TreeSelectButton skillTreeButton = new TreeSelectButton(index.intValue(), skillTree);
 				skillTreeButton.active = treeState != SkillTreeProgression.TreeState.LOCKED;
-				
 				MutableComponent tooltip = Component.translatable(SkillTree.toDescriptionId(skillTree.key()));
 				
 				if (treeState == SkillTreeProgression.TreeState.LOCKED && skillTree.value().unlockTip() != null) {
@@ -213,7 +215,7 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
 	}
 	
 	@Override
-	public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
+	public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
 		ResourceLocation background = SKILL_TREE_BACKGROUND_TEXTURES.apply(this.currentPage.skillTree);
 		Vec3i menuBarColor = this.currentPage.skillTree.value().menuBarColor();
 		
@@ -222,7 +224,9 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
 		guiGraphics.drawString(this.font, this.currentPage.getTitle(), 46, 18, -1);
 		guiGraphics.fill(44, 32, this.width - 10, 34, ARGB32.color(200, menuBarColor.getX(), menuBarColor.getY(), menuBarColor.getZ()));
 		
-		super.render(guiGraphics, mouseX, mouseY, partialTicks);
+		for (Renderable renderable : this.renderables) {
+            renderable.render(guiGraphics, mouseX, mouseY, partialTick);
+        }
 		
 		if (!this.isBackgroundMode()) {
 			boolean hasAny = false;
@@ -259,12 +263,12 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
 			}
 		}
 		
-		this.currentPage.render(guiGraphics, mouseX, mouseY, partialTicks);
+		this.currentPage.render(guiGraphics, mouseX, mouseY, partialTick);
 	}
 	
 	@Override
-	public boolean mouseClicked(double mouseX, double mouseY, int pButton) {
-		if (super.mouseClicked(mouseX, mouseY, pButton)) {
+	public boolean mouseClicked(double mouseX, double mouseY, int button) {
+		if (super.mouseClicked(mouseX, mouseY, button)) {
 			return true;
 		}
 		
@@ -272,8 +276,8 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
 		int correctedMouseX = (int)((mouseX - this.currentPage.pageLeft) / correctScale);
 		int correctedMouseY = (int)((mouseY - this.currentPage.pageTop) / correctScale);
 		
-		for (NodeButton button : this.currentPage.treeNodes.values()) {
-			if (button.mouseClicked(correctedMouseX, correctedMouseY, pButton)) {
+		for (NodeButton nodeButton : this.currentPage.treeNodes.values()) {
+			if (nodeButton.mouseClicked(correctedMouseX, correctedMouseY, button)) {
 				return true;
 			}
 		}
@@ -293,9 +297,9 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
 	}
 	
 	@Override
-	public boolean mouseScrolled(double x, double y, double wheel) {
-		if (!super.mouseScrolled(x, y, wheel)) {
-			if (wheel > 0.0D) {
+	public boolean mouseScrolled(double x, double y, double xDelta, double yDelta) {
+		if (!super.mouseScrolled(x, y, xDelta, yDelta)) {
+			if (yDelta > 0.0D) {
 				this.scaleUp();
 			} else {
 				this.scaleDown();
@@ -358,7 +362,12 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
 	
 	@OnlyIn(Dist.CLIENT)
 	public class TreeSelectButton extends Button implements HoverSoundPlayer {
-		private static final ResourceLocation SKILL_MENU_BUTTON = ResourceLocation.fromNamespaceAndPath(EpicSkills.MODID, "textures/gui/widget/skill_tree_button.png");
+		protected static final WidgetSprites SPRITES = new WidgetSprites(
+	        ResourceLocation.fromNamespaceAndPath(EpicSkills.MODID, "widget/skill_tree_button"),
+	        ResourceLocation.fromNamespaceAndPath(EpicSkills.MODID, "widget/skill_tree_button_disabled"),
+	        ResourceLocation.fromNamespaceAndPath(EpicSkills.MODID, "widget/skill_tree_button_highlighted")
+	    );
+		
 		private final Holder.Reference<SkillTree> skillTree;
 		
 		protected TreeSelectButton(int treeIndex, Holder.Reference<SkillTree> skillTree) {
@@ -367,7 +376,6 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
 					SkillTreeScreen.this.setTreeIndex(treeIndex);
 				}
 			}, Button.DEFAULT_NARRATION);
-			
 			this.skillTree = skillTree;
 		}
 		
@@ -377,11 +385,7 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
 				this.isHovered = false;
 			}
 			
-			if (this.active) {
-				this.renderTexture(guiGraphics, SKILL_MENU_BUTTON, this.getX(), this.getY(), 0, 0, 32, 32, 32, 64, 64);
-			} else {
-				guiGraphics.blit(SKILL_MENU_BUTTON, this.getX(), this.getY(), 32.0F, 0.0F, 32, 32, 64, 64);
-			}
+			guiGraphics.blitSprite(SPRITES.get(this.active, this.isHoveredOrFocused()), this.getX(), this.getY(), this.getWidth(), this.getHeight());
 			
 			if (!this.active) {
 				RenderSystem.setShaderColor(0.3F, 0.3F, 0.3F, 1.0F);
@@ -475,7 +479,7 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
 		@Override
 		public void onPress() {
 			if (!SkillTreeScreen.this.synclock) {
-				NetworkManager.sendToServer(new ServerBoundConvertAbilityPointRequest());
+				EpicFightNetworkManager.sendToServer(new ServerBoundConvertAbilityPointRequest());
 				SkillTreeScreen.this.synclock = true;
 			}
 		}
@@ -823,7 +827,7 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
 						Vec2i p2 = controlPoints.get(i + 1);
 						
 						Tesselator tesselator = Tesselator.getInstance();
-						BufferBuilder bufferBuilder = tesselator.getBuilder();
+						BufferBuilder bufferBuilder = tesselator.begin(VertexFormat.Mode.LINES, DefaultVertexFormat.POSITION_COLOR_NORMAL);
 						
 						float xDiff = p2.x - p1.x;
 						float yDiff = p2.y - p1.y;
@@ -831,30 +835,27 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
 						xDiff /= length;
 						yDiff /= length;
 						
-						bufferBuilder.begin(VertexFormat.Mode.LINES, DefaultVertexFormat.POSITION_COLOR_NORMAL);
+						bufferBuilder
+							.addVertex(guiGraphics.pose().last().pose(), (float)p1.x + 0.5F, (float)p1.y + 0.5F, 0.0F)
+							.setColor(unlocked ? 0xFFD6D2C5 : 0xFF000000)
+							.setNormal(xDiff, yDiff, 0.0F);
 						
 						bufferBuilder
-							.vertex(guiGraphics.pose().last().pose(), (float)p1.x + 0.5F, (float)p1.y + 0.5F, 0.0F)
-							.color(unlocked ? 0xFFD6D2C5 : 0xFF000000)
-							.normal(xDiff, yDiff, 0.0F)
-						.endVertex();
+							.addVertex(guiGraphics.pose().last().pose(), (float)p2.x + 0.5F, (float)p2.y + 0.5F, 0.0F)
+							.setColor(unlocked ? 0xFFD6D2C5 : 0xFF000000)
+							.setNormal(xDiff, yDiff, 0.0F);
 						
-						bufferBuilder
-							.vertex(guiGraphics.pose().last().pose(), (float)p2.x + 0.5F, (float)p2.y + 0.5F, 0.0F)
-							.color(unlocked ? 0xFFD6D2C5 : 0xFF000000)
-							.normal(xDiff, yDiff, 0.0F)
-						.endVertex();
 						
 						RenderSystem.disableCull();
 						
 						if (nodeScale != -1) {
-							RenderSystem.lineWidth((float)nodeScale * 2.0F);
+							RenderSystem.lineWidth(nodeScale * 2.0F);
 						} else {
 							RenderSystem.lineWidth((float)minecraft.getWindow().getGuiScale() * 2.0F);
 						}
 						
 						RenderSystem.setShader(GameRenderer::getRendertypeLinesShader);
-						BufferUploader.drawWithShader(bufferBuilder.end());
+						BufferUploader.drawWithShader(bufferBuilder.buildOrThrow());
 						RenderSystem.enableCull();
 					}
 					

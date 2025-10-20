@@ -1,67 +1,79 @@
 package com.yesman.epicskills.event;
 
 import com.yesman.epicskills.EpicSkills;
-import com.yesman.epicskills.network.NetworkManager;
+import com.yesman.epicskills.neoforge.attachment.AbilityPoints;
+import com.yesman.epicskills.neoforge.attachment.SkillTreeProgression;
 import com.yesman.epicskills.network.client.ClientBoundReloadSkillTree;
-import com.yesman.epicskills.network.client.ClientBoundTreeInitSyncPacket;
+import com.yesman.epicskills.network.client.ClientBoundSyncTreeState;
+import com.yesman.epicskills.registry.entry.EpicSkillsAttachmentTypes;
 import com.yesman.epicskills.registry.entry.EpicSkillsItems;
-import com.yesman.epicskills.world.capability.AbilityPoints;
-import com.yesman.epicskills.world.capability.SkillTreeProgression;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.storage.loot.BuiltInLootTables;
 import net.minecraft.world.level.storage.loot.LootPool;
 import net.minecraft.world.level.storage.loot.entries.LootItem;
 import net.minecraft.world.level.storage.loot.predicates.LootItemRandomChanceCondition;
 import net.minecraft.world.level.storage.loot.providers.number.ConstantValue;
 import net.minecraft.world.level.storage.loot.providers.number.UniformGenerator;
-import net.minecraftforge.event.LootTableLoadEvent;
-import net.minecraftforge.event.OnDatapackSyncEvent;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.entity.EntityJoinLevelEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.LootTableLoadEvent;
+import net.neoforged.neoforge.event.OnDatapackSyncEvent;
+import net.neoforged.neoforge.event.entity.EntityEvent.EntityConstructing;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.tick.PlayerTickEvent;
+import yesman.epicfight.api.neoevent.HandleEntityDataEvent;
+import yesman.epicfight.network.EpicFightNetworkManager;
 import yesman.epicfight.world.gamerule.EpicFightGameRules;
 
-@Mod.EventBusSubscriber(modid = EpicSkills.MODID)
+@EventBusSubscriber(modid = EpicSkills.MODID)
 public abstract class GameEvents {
 	@SubscribeEvent
+	public static void epicskills$entityConstructing(EntityConstructing event) {
+		if (event.getEntity().getType() == EntityType.PLAYER) {
+			// Create attachments
+			event.getEntity().getData(EpicSkillsAttachmentTypes.ABILITY_POINTS);
+			event.getEntity().getData(EpicSkillsAttachmentTypes.SKILL_TREE_PROGRESSION);
+		}
+	}
+	
+	@SubscribeEvent
 	public static void epicskills$entityJoinLevel(EntityJoinLevelEvent event) {
-		if (event.getEntity() instanceof ServerPlayer serverplayer) {
-			serverplayer.getCapability(AbilityPoints.ABILITY_POINTS).ifPresent(abilityPoints -> {
+		if (event.getEntity().getType() == EntityType.PLAYER) {
+			AbilityPoints abilityPoints = event.getEntity().getData(EpicSkillsAttachmentTypes.ABILITY_POINTS);
+			SkillTreeProgression skilltreeProgression = event.getEntity().getData(EpicSkillsAttachmentTypes.SKILL_TREE_PROGRESSION);
+			
+			if (event.getEntity() instanceof ServerPlayer serverplayer) {
 				abilityPoints.markDirty();
 				abilityPoints.sendChanges();
-			});
-			
-			serverplayer.getCapability(SkillTreeProgression.SKILL_TREE_PROGRESSION).ifPresent(skillTreeProgression -> {
 				CompoundTag compound = new CompoundTag();
-				skillTreeProgression.serializeTo(compound);
-				
-				NetworkManager.sendToPlayer(new ClientBoundTreeInitSyncPacket(compound), serverplayer);
-			});
+				skilltreeProgression.serializeTo(compound);
+				EpicFightNetworkManager.sendToPlayer(new ClientBoundSyncTreeState(compound), serverplayer);
+			}
 		}
 	}
 	
 	@SubscribeEvent
 	public static void epicskills$onDatapackSync(OnDatapackSyncEvent event) {
 		if (event.getPlayer() == null) {
-			for (ServerPlayer serverPlayer : event.getPlayers()) {
-				serverPlayer.getCapability(SkillTreeProgression.SKILL_TREE_PROGRESSION).ifPresent(skillTreeProgression -> {
+			for (ServerPlayer serverPlayer : event.getPlayerList().getPlayers()) {
+				serverPlayer.getExistingData(EpicSkillsAttachmentTypes.SKILL_TREE_PROGRESSION).ifPresent(skillTreeProgression -> {
 					skillTreeProgression.reload(true);
-					NetworkManager.sendToPlayer(new ClientBoundReloadSkillTree(true), serverPlayer);
+					EpicFightNetworkManager.sendToPlayer(new ClientBoundReloadSkillTree(true), serverPlayer);
 				});
 			}
 		}
 	}
 	
 	@SubscribeEvent
-	public static void epicskills$playerTickPost(TickEvent.PlayerTickEvent event) {
-		if (event.phase == TickEvent.Phase.END && !event.player.level().isClientSide()) {
-			if (event.player.tickCount % event.player.getType().updateInterval() == 0) {
-				event.player.getCapability(AbilityPoints.ABILITY_POINTS).ifPresent(abilityPoints -> abilityPoints.sendChanges());
-				event.player.getCapability(SkillTreeProgression.SKILL_TREE_PROGRESSION).ifPresent(skilltreeProgression -> skilltreeProgression.tick());
+	public static void epicskills$playerTickPost(PlayerTickEvent.Post event) {
+		if (!event.getEntity().level().isClientSide()) {
+			if (event.getEntity().tickCount % event.getEntity().getType().updateInterval() == 0) {
+				event.getEntity().getExistingData(EpicSkillsAttachmentTypes.ABILITY_POINTS).ifPresent(abilityPoints -> abilityPoints.sendChanges());
+				event.getEntity().getExistingData(EpicSkillsAttachmentTypes.SKILL_TREE_PROGRESSION).ifPresent(skilltreeProgression -> skilltreeProgression.tick());
 			}
 		}
 	}
@@ -74,40 +86,64 @@ public abstract class GameEvents {
 			return;
 		}
 		
-		event.getOriginal().reviveCaps();
-		
-		event.getOriginal().getCapability(SkillTreeProgression.SKILL_TREE_PROGRESSION).ifPresent(skillTreeProgression -> {
-			event.getEntity().getCapability(SkillTreeProgression.SKILL_TREE_PROGRESSION).ifPresent(skillTreeProgression$2 -> {
+		event.getOriginal().getExistingData(EpicSkillsAttachmentTypes.SKILL_TREE_PROGRESSION).ifPresent(skillTreeProgression -> {
+			event.getEntity().getExistingData(EpicSkillsAttachmentTypes.SKILL_TREE_PROGRESSION).ifPresent(skillTreeProgression$2 -> {
 				CompoundTag compound = new CompoundTag();
 				skillTreeProgression.serializeTo(compound);
 				skillTreeProgression$2.deserializeFrom(compound);
 			});
 		});
 		
-		event.getOriginal().getCapability(AbilityPoints.ABILITY_POINTS).ifPresent(abilityPoints -> {
-			event.getEntity().getCapability(AbilityPoints.ABILITY_POINTS).ifPresent(abilityPoints$2 -> {
+		event.getOriginal().getExistingData(EpicSkillsAttachmentTypes.ABILITY_POINTS).ifPresent(abilityPoints -> {
+			event.getEntity().getExistingData(EpicSkillsAttachmentTypes.ABILITY_POINTS).ifPresent(abilityPoints$2 -> {
 				CompoundTag compound = new CompoundTag();
 				abilityPoints.serializeTo(compound);
 				abilityPoints$2.deserializeFrom(compound);
 			});
 		});
+	}
+	
+	@SubscribeEvent
+	public static void epicskills$handleEntityDataEventSave(HandleEntityDataEvent.Save event) {
+		event.getEntityPatch().getOriginal().getExistingData(EpicSkillsAttachmentTypes.ABILITY_POINTS).ifPresent(abilityPoints -> {
+			CompoundTag compound = new CompoundTag();
+			abilityPoints.serializeTo(compound);
+			
+			event.getCompound().put("abilityPoints", compound);
+		});
 		
-		event.getOriginal().invalidateCaps();
+		event.getEntityPatch().getOriginal().getExistingData(EpicSkillsAttachmentTypes.SKILL_TREE_PROGRESSION).ifPresent(skillTreeProgression -> {
+			CompoundTag compound = new CompoundTag();
+			skillTreeProgression.serializeTo(compound);
+			
+			event.getCompound().put("skillTreeProgression", compound);
+		});
+	}
+	
+	@SubscribeEvent
+	public static void epicskills$handleEntityDataEventLoad(HandleEntityDataEvent.Load event) {
+		event.getEntityPatch().getOriginal().getExistingData(EpicSkillsAttachmentTypes.ABILITY_POINTS).ifPresent(abilityPoints -> {
+			abilityPoints.deserializeFrom(event.getCompound().getCompound("abilityPoints"));
+		});
+		
+		event.getEntityPatch().getOriginal().getExistingData(EpicSkillsAttachmentTypes.SKILL_TREE_PROGRESSION).ifPresent(skillTreeProgression -> {
+			skillTreeProgression.deserializeFrom(event.getCompound().getCompound("skillTreeProgression"));
+		});
 	}
 	
 	@SubscribeEvent
 	public static void epicskills$lootTableLoad(final LootTableLoadEvent event) {
 		// Low chance - many rolls
 		if (
-			event.getName().equals(BuiltInLootTables.SIMPLE_DUNGEON) ||
-			event.getName().equals(BuiltInLootTables.UNDERWATER_RUIN_SMALL) ||
-			event.getName().equals(BuiltInLootTables.UNDERWATER_RUIN_BIG) ||
-			event.getName().equals(BuiltInLootTables.ABANDONED_MINESHAFT) ||
-			event.getName().equals(BuiltInLootTables.NETHER_BRIDGE) ||
-			event.getName().equals(BuiltInLootTables.RUINED_PORTAL) ||
-			event.getName().equals(BuiltInLootTables.SHIPWRECK_SUPPLY) ||
-			event.getName().equals(BuiltInLootTables.SHIPWRECK_MAP) ||
-			event.getName().equals(BuiltInLootTables.BASTION_OTHER)
+			event.getKey().equals(BuiltInLootTables.SIMPLE_DUNGEON) ||
+			event.getKey().equals(BuiltInLootTables.UNDERWATER_RUIN_SMALL) ||
+			event.getKey().equals(BuiltInLootTables.UNDERWATER_RUIN_BIG) ||
+			event.getKey().equals(BuiltInLootTables.ABANDONED_MINESHAFT) ||
+			event.getKey().equals(BuiltInLootTables.NETHER_BRIDGE) ||
+			event.getKey().equals(BuiltInLootTables.RUINED_PORTAL) ||
+			event.getKey().equals(BuiltInLootTables.SHIPWRECK_SUPPLY) ||
+			event.getKey().equals(BuiltInLootTables.SHIPWRECK_MAP) ||
+			event.getKey().equals(BuiltInLootTables.BASTION_OTHER)
 		) {
 			event
 				.getTable()
@@ -122,16 +158,16 @@ public abstract class GameEvents {
 		
 		// Middle chance - modest rolls
 		if (
-			event.getName().equals(BuiltInLootTables.ANCIENT_CITY) ||
-			event.getName().equals(BuiltInLootTables.END_CITY_TREASURE) ||
-			event.getName().equals(BuiltInLootTables.BASTION_BRIDGE) ||
-			event.getName().equals(BuiltInLootTables.BASTION_HOGLIN_STABLE) ||
-			event.getName().equals(BuiltInLootTables.DESERT_PYRAMID) ||
-			event.getName().equals(BuiltInLootTables.PILLAGER_OUTPOST) ||
-			event.getName().equals(BuiltInLootTables.JUNGLE_TEMPLE_DISPENSER) ||
-			event.getName().equals(BuiltInLootTables.SHIPWRECK_TREASURE) ||
-			event.getName().equals(BuiltInLootTables.STRONGHOLD_CORRIDOR) ||
-			event.getName().equals(BuiltInLootTables.STRONGHOLD_CROSSING)
+			event.getKey().equals(BuiltInLootTables.ANCIENT_CITY) ||
+			event.getKey().equals(BuiltInLootTables.END_CITY_TREASURE) ||
+			event.getKey().equals(BuiltInLootTables.BASTION_BRIDGE) ||
+			event.getKey().equals(BuiltInLootTables.BASTION_HOGLIN_STABLE) ||
+			event.getKey().equals(BuiltInLootTables.DESERT_PYRAMID) ||
+			event.getKey().equals(BuiltInLootTables.PILLAGER_OUTPOST) ||
+			event.getKey().equals(BuiltInLootTables.JUNGLE_TEMPLE_DISPENSER) ||
+			event.getKey().equals(BuiltInLootTables.SHIPWRECK_TREASURE) ||
+			event.getKey().equals(BuiltInLootTables.STRONGHOLD_CORRIDOR) ||
+			event.getKey().equals(BuiltInLootTables.STRONGHOLD_CROSSING)
 		) {
 			event
 				.getTable()
@@ -146,12 +182,11 @@ public abstract class GameEvents {
 		
 		// High chance - one roll
 		if (
-			event.getName().equals(BuiltInLootTables.BURIED_TREASURE) ||
-			event.getName().equals(BuiltInLootTables.JUNGLE_TEMPLE) ||
-			event.getName().equals(BuiltInLootTables.STRONGHOLD_LIBRARY) ||
-			event.getName().equals(BuiltInLootTables.BASTION_TREASURE) ||
-			event.getName().equals(BuiltInLootTables.WOODLAND_MANSION)
-			
+			event.getKey().equals(BuiltInLootTables.BURIED_TREASURE) ||
+			event.getKey().equals(BuiltInLootTables.JUNGLE_TEMPLE) ||
+			event.getKey().equals(BuiltInLootTables.STRONGHOLD_LIBRARY) ||
+			event.getKey().equals(BuiltInLootTables.BASTION_TREASURE) ||
+			event.getKey().equals(BuiltInLootTables.WOODLAND_MANSION)
 		) {
 			event
 				.getTable()

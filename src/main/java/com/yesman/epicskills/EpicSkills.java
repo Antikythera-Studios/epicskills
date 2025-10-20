@@ -5,47 +5,36 @@ import org.slf4j.Logger;
 import com.mojang.logging.LogUtils;
 import com.yesman.epicskills.client.gui.screen.CategorySlotTexture;
 import com.yesman.epicskills.client.gui.screen.SkillTreeScreen;
-import com.yesman.epicskills.network.NetworkManager;
-import com.yesman.epicskills.registry.entry.EpicSkiillsGlobalLootModifer;
+import com.yesman.epicskills.registry.entry.EpicSkillsAttachmentTypes;
+import com.yesman.epicskills.registry.entry.EpicSkillsGlobalLootModifer;
 import com.yesman.epicskills.registry.entry.EpicSkillsItems;
 import com.yesman.epicskills.registry.entry.EpicSkillsSounds;
 import com.yesman.epicskills.server.commands.PlayerAbilityPointsCommand;
 import com.yesman.epicskills.server.commands.PlayerSkillTreeCommand;
 import com.yesman.epicskills.skilltree.SkillTree;
 import com.yesman.epicskills.skilltree.SkillTreeEntry;
-import com.yesman.epicskills.world.capability.AbilityPoints;
-import com.yesman.epicskills.world.capability.SkillTreeProgression;
 
-import net.minecraft.world.entity.Entity;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
-import net.minecraftforge.event.RegisterCommandsEvent;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
-import net.minecraftforge.registries.DataPackRegistryEvent;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.neoforge.registries.DataPackRegistryEvent;
 import yesman.epicfight.main.EpicFightSharedConstants;
-import yesman.epicfight.world.item.EpicFightCreativeTabs;
+import yesman.epicfight.registry.entries.EpicFightCreativeTabs;
 
 /**
  *  ***************************************************************
  *  Major changes
  *  ***************************************************************
- *  20.2.0
+ *  21.2.0
  *  
- *  UI enhancements
- *  Replace default skill tree open key to 'N', And now you can open original skill edit screen in Epic Fight
- *  Added skill editor open button in skill tree screen
- *  
- *  System changes
- *  Players now get restricted by a cooldown to replace skills, which added in Epic Fight 20.13.1
- *  
- *  Bugfix
- *  Fixed husk not dropping Ability stone
+ *  Ported from Epic Fight: Skill tree 20.2.0
  *  
  *  ***************************************************************
  *  
@@ -64,20 +53,16 @@ public class EpicSkills {
 		return String.format(s, MODID);
 	}
     
-	public EpicSkills(FMLJavaModLoadingContext context) {
-        IEventBus modEventBus = context.getModEventBus();
-        
+	public EpicSkills(IEventBus modEventBus, ModContainer modContainer) {
         modEventBus.addListener(this::epicskills$newDataPackRegistryEvent);
-        modEventBus.addListener(this::epicskills$doCommonStuff);
         modEventBus.addListener(this::epicskills$buildCreativeTabContents);
         
-        EpicSkillsSounds.SOUNDS.register(modEventBus);
-        EpicSkillsItems.ITEMS.register(modEventBus);
-        EpicSkiillsGlobalLootModifer.GLOBAL_LOOT_LOOT_MODIFIERS.register(modEventBus);
+        EpicSkillsSounds.REGISTRY.register(modEventBus);
+        EpicSkillsItems.REGISTRY.register(modEventBus);
+        EpicSkillsAttachmentTypes.REGISTRY.register(modEventBus);
+        EpicSkillsGlobalLootModifer.GLOBAL_LOOT_LOOT_MODIFIERS.register(modEventBus);
         
-        MinecraftForge.EVENT_BUS.addListener(this::epicskills$registerCommands);
-        MinecraftForge.EVENT_BUS.addGenericListener(Entity.class, AbilityPoints::epicskills$attachCapabilities);
-        MinecraftForge.EVENT_BUS.addGenericListener(Entity.class, SkillTreeProgression::epicskills$attachCapabilities);
+        NeoForge.EVENT_BUS.addListener(this::epicskills$registerCommands);
         
         if (EpicFightSharedConstants.isPhysicalClient()) {
         	CategorySlotTexture.ENUM_MANAGER.registerEnumCls(EpicSkills.MODID, SkillTreeScreen.TreePage.NodeButton.CategorySlotTextures.class);
@@ -87,10 +72,6 @@ public class EpicSkills {
 	public void epicskills$newDataPackRegistryEvent(DataPackRegistryEvent.NewRegistry event) {
 		event.dataPackRegistry(SkillTree.SKILL_TREE_REGISTRY_KEY, SkillTree.CODEC, SkillTree.CODEC);
 		event.dataPackRegistry(SkillTreeEntry.SKILL_TREE_ENTRY_REGISTRY_KEY, SkillTreeEntry.CODEC, SkillTreeEntry.CODEC);
-	}
-	
-	private void epicskills$doCommonStuff(final FMLCommonSetupEvent event) {
-		event.enqueueWork(NetworkManager::registerPackets);
 	}
 	
 	private void epicskills$registerCommands(final RegisterCommandsEvent event) {
@@ -104,7 +85,7 @@ public class EpicSkills {
 		}
 	}
 	
-	@Mod.EventBusSubscriber(modid = EpicSkills.MODID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+	@EventBusSubscriber(modid = EpicSkills.MODID, value = Dist.CLIENT)
     public static class ClientModEvents {
         @SubscribeEvent
         public static void epicskills$fmlClientSetup(FMLClientSetupEvent event) {

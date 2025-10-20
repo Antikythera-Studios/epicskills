@@ -14,8 +14,10 @@ import org.jetbrains.annotations.Nullable;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.mojang.datafixers.util.Pair;
+import com.mojang.serialization.JsonOps;
 
 import net.minecraft.advancements.critereon.EntityPredicate;
+import net.minecraft.core.Holder;
 import net.minecraft.core.Vec3i;
 import net.minecraft.data.CachedOutput;
 import net.minecraft.data.DataProvider;
@@ -65,7 +67,7 @@ public abstract class SkillTreeProvider implements DataProvider {
 	
 	protected static class SkillTreePageBuilder {
 		final ResourceLocation name;
-		final Map<Skill, SkillTreeNodeBuilder> nodes = new LinkedHashMap<> ();
+		final Map<Holder<Skill>, SkillTreeNodeBuilder> nodes = new LinkedHashMap<> ();
 		
 		Vec3i menuBarColor = new Vec3i(255, 255, 255);
 		@Nullable
@@ -91,10 +93,7 @@ public abstract class SkillTreeProvider implements DataProvider {
 			jsonObject.addProperty("locked", this.locked);
 			jsonObject.addProperty("hidden", this.hiddenWhenLocked);
 			
-			if (this.conditions != null) {
-				jsonObject.add("conditions", this.conditions.serializeToJson());
-			}
-			
+			if (this.conditions != null) jsonObject.add("conditions", EntityPredicate.CODEC.encodeStart(JsonOps.INSTANCE, this.conditions).getOrThrow());
 			if (this.unlockTipTranslationKey != null) jsonObject.addProperty("unlock_tip", this.unlockTipTranslationKey);
 			if (this.priority != 100) jsonObject.addProperty("priority", this.priority);
 			
@@ -105,17 +104,17 @@ public abstract class SkillTreeProvider implements DataProvider {
 			JsonObject jsonObject = new JsonObject();
 			JsonArray nodes = new JsonArray();
 			
-			for (Map.Entry<Skill, SkillTreeNodeBuilder> entry : this.nodes.entrySet()) {
+			for (Map.Entry<Holder<Skill>, SkillTreeNodeBuilder> entry : this.nodes.entrySet()) {
 				JsonObject node = new JsonObject();
 				
-				node.addProperty("skill", entry.getKey().getRegistryName().toString());
+				node.addProperty("skill", entry.getKey().getRegisteredName().toString());
 				
 				if (!entry.getValue().parentSkill.isEmpty()) {
 					JsonArray parents = new JsonArray();
 					
-					for (Pair<Skill, List<Vec2i>> parent : entry.getValue().parentSkill) {
+					for (Pair<Holder<Skill>, List<Vec2i>> parent : entry.getValue().parentSkill) {
 						JsonObject parentObj = new JsonObject();
-						parentObj.addProperty("skill", parent.getFirst().getRegistryName().toString());
+						parentObj.addProperty("skill", parent.getFirst().getRegisteredName().toString());
 						
 						if (!parent.getSecond().isEmpty()) {
 							JsonArray controlPoints = new JsonArray();
@@ -137,7 +136,7 @@ public abstract class SkillTreeProvider implements DataProvider {
 				}
 				
 				if (entry.getValue().unlockCondition != null) {
-					node.add("conditions", entry.getValue().unlockCondition.serializeToJson());
+					node.add("conditions", EntityPredicate.CODEC.encodeStart(JsonOps.INSTANCE, entry.getValue().unlockCondition).getOrThrow());
 					node.addProperty("custom_condition", entry.getValue().hasCustomUnlockCondition);
 					if (entry.getValue().unlockTipTranslationKey != null) node.addProperty("unlock_tip", entry.getValue().unlockTipTranslationKey);
 				}
@@ -203,15 +202,15 @@ public abstract class SkillTreeProvider implements DataProvider {
 		/**
 		 * Make new entry, call {@link SkillTreeNodeBuilder#done} to get back to building page
 		 */
-		public SkillTreeNodeBuilder newNode(Skill skill) {
+		public SkillTreeNodeBuilder newNode(Holder<Skill> skill) {
 			SkillTreeNodeBuilder nodeBuilder = new SkillTreeNodeBuilder(skill);
 			this.nodes.put(skill, nodeBuilder);
 			return nodeBuilder;
 		}
 		
 		public class SkillTreeNodeBuilder {
-			final Skill skill;
-			final List<Pair<Skill, List<Vec2i>>> parentSkill = new ArrayList<> ();
+			final Holder<Skill> skill;
+			final List<Pair<Holder<Skill>, List<Vec2i>>> parentSkill = new ArrayList<> ();
 			@Nullable
 			EntityPredicate unlockCondition;
 			boolean hasCustomUnlockCondition;
@@ -223,9 +222,9 @@ public abstract class SkillTreeProvider implements DataProvider {
 			@Nullable
 			ResourceLocation importFrom;
 			
-			private SkillTreeNodeBuilder(Skill skill) {
+			private SkillTreeNodeBuilder(Holder<Skill> skill) {
 				if (SkillTreePageBuilder.this.nodes.containsKey(skill)) {
-					throw new IllegalStateException(skill.getRegistryName() + " already exists");
+					throw new IllegalStateException(skill.getRegisteredName() + " already exists");
 				}
 				
 				this.skill = skill;
@@ -291,13 +290,13 @@ public abstract class SkillTreeProvider implements DataProvider {
 			/**
 			 * Add a parent node that should be unlocked first
 			 */
-			public SkillTreeNodeBuilder addParent(Skill skill, Vec2i... controlPoints) {
+			public SkillTreeNodeBuilder addParent(Holder<Skill> skill, Vec2i... controlPoints) {
 				if (this.skill == skill) {
 					throw new IllegalArgumentException("Can't connect to myself");
 				}
 				
 				if (!SkillTreePageBuilder.this.nodes.containsKey(skill)) {
-					throw new IllegalStateException("Tried connecting to a " + skill.getRegistryName() + " node but nothing has found.");
+					throw new IllegalStateException("Tried connecting to a " + skill.getRegisteredName() + " node but nothing has found.");
 				}
 				
 				this.parentSkill.add(Pair.of(skill, List.of(controlPoints)));
