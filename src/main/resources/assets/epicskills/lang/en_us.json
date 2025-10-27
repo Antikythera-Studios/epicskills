@@ -52,8 +52,9 @@
 	"commands.epicskills.skilltree_progression.failed": "Failed to execute command due to invalid player data",
 	
 	"key.epicskills.gui": "Epic Fight: Skill Tree GUI",
-	
+
 	"key.epicskills.open_skill_tree": "Open Skill Tree",
+    "key.epicskills.open_skill_tree.description": "Opens the Epic Fight skill tree screen",
 	
 	"eof": "eof"
 }

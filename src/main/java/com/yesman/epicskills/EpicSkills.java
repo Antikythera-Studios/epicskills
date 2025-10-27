@@ -1,5 +1,7 @@
 package com.yesman.epicskills;
 
+import net.minecraft.resources.ResourceLocation;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
@@ -92,4 +94,8 @@ public class EpicSkills {
         	event.enqueueWork(CategorySlotTexture.ENUM_MANAGER::loadEnum);
         }
 	}
+
+    public static @NotNull ResourceLocation rl(@NotNull String path) {
+        return ResourceLocation.fromNamespaceAndPath(MODID, path);
+    }
 }

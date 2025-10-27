@@ -1,23 +1,8 @@
 package com.yesman.epicskills.client.gui.screen;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.function.Function;
-
-import org.apache.commons.lang3.mutable.MutableInt;
-import org.apache.logging.log4j.Logger;
-
 import com.google.common.collect.ImmutableMap;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.BufferUploader;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.Tesselator;
-import com.mojang.blaze3d.vertex.VertexFormat;
+import com.mojang.blaze3d.vertex.*;
 import com.mojang.datafixers.util.Pair;
 import com.yesman.epicskills.EpicSkills;
 import com.yesman.epicskills.client.gui.screen.SkillTreeScreen.TreePage.NodeButton;
@@ -32,16 +17,10 @@ import com.yesman.epicskills.network.server.ServerBoundConvertAbilityPointReques
 import com.yesman.epicskills.registry.entry.EpicSkillsAttachmentTypes;
 import com.yesman.epicskills.registry.entry.EpicSkillsSounds;
 import com.yesman.epicskills.skilltree.SkillTree;
-
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.AbstractButton;
-import net.minecraft.client.gui.components.AbstractWidget;
-import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.Renderable;
-import net.minecraft.client.gui.components.Tooltip;
-import net.minecraft.client.gui.components.WidgetSprites;
+import net.minecraft.client.gui.components.*;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.layouts.LayoutElement;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
@@ -63,6 +42,8 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
+import org.apache.commons.lang3.mutable.MutableInt;
+import org.apache.logging.log4j.Logger;
 import yesman.epicfight.api.utils.ParseUtil;
 import yesman.epicfight.api.utils.math.Vec2i;
 import yesman.epicfight.client.gui.screen.SkillEditScreen;
@@ -72,6 +53,9 @@ import yesman.epicfight.network.EpicFightNetworkManager;
 import yesman.epicfight.registry.entries.EpicFightItems;
 import yesman.epicfight.skill.Skill;
 import yesman.epicfight.world.capabilities.skill.PlayerSkills;
+
+import java.util.*;
+import java.util.function.Function;
 
 @OnlyIn(Dist.CLIENT)
 public class SkillTreeScreen extends Screen implements BackgroundRenderableScreen {
@@ -102,7 +86,11 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
 	private boolean backgroundMode;
 	private boolean synclock;
 	private boolean discarded = false;
-	
+    /**
+     * Whether to ignore {@link SkillTreeScreen#mouseDragged} calls.
+     */
+    private boolean disableMouseDragging = false;
+
 	private int nodeScale = -1;
 	
 	public SkillTreeScreen(LocalPlayerPatch playerpatch) {
@@ -287,6 +275,9 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
 	
 	@Override
 	public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+        if (isDisableMouseDragging()) {
+            return false;
+        }
 		if (!super.mouseDragged(mouseX, mouseY, button, dragX, dragY)) {
 			this.currentPage.pageLeft += dragX;
 			this.currentPage.pageTop += dragY;
@@ -359,7 +350,15 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
 	public boolean discarded() {
 		return this.discarded;
 	}
-	
+
+    public boolean isDisableMouseDragging() {
+        return disableMouseDragging;
+    }
+
+    public void setDisableMouseDragging(boolean disableMouseDragging) {
+        this.disableMouseDragging = disableMouseDragging;
+    }
+
 	@OnlyIn(Dist.CLIENT)
 	public class TreeSelectButton extends Button implements HoverSoundPlayer {
 		protected static final WidgetSprites SPRITES = new WidgetSprites(
