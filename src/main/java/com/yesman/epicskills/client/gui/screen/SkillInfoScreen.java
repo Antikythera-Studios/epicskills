@@ -1,7 +1,5 @@
 package com.yesman.epicskills.client.gui.screen;
 
-import java.util.Set;
-
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.yesman.epicskills.EpicSkills;
 import com.yesman.epicskills.neoforge.attachment.AbilityPoints;
@@ -10,7 +8,6 @@ import com.yesman.epicskills.network.client.ClientBoundUnlockNode;
 import com.yesman.epicskills.network.server.ServerBoundUnlockSkillRequest;
 import com.yesman.epicskills.registry.entry.EpicSkillsAttachmentTypes;
 import com.yesman.epicskills.skilltree.SkillTree;
-
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -33,13 +30,20 @@ import yesman.epicfight.network.client.CPChangeSkill;
 import yesman.epicfight.skill.SkillContainer;
 import yesman.epicfight.world.gamerule.EpicFightGameRules;
 
+import java.util.Set;
+
 @OnlyIn(Dist.CLIENT)
 public class SkillInfoScreen extends SkillBookScreen {
 	private final Holder.Reference<SkillTree> skillTree;
 	private final SkillTreeProgression.TopDownTreeNode node;
 	private final AbilityPoints abilityPoints;
 	private boolean backgroundMode;
-	
+    private Button actionButton;
+
+    public Button getActionButton() {
+        return actionButton;
+    }
+
 	public SkillInfoScreen(Player opener, Holder.Reference<SkillTree> skillTree, SkillTreeProgression.TopDownTreeNode node, Screen parentScreen) {
 		super(opener, node.nodeInfo().skill(), null, parentScreen);
 		
@@ -81,7 +85,7 @@ public class SkillInfoScreen extends SkillBookScreen {
 			active = false;
 		}
 		
-		Button actionButton =
+		actionButton =
 			Button.builder(
 				message,
 				button -> {

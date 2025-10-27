@@ -17,12 +17,19 @@ repositories {
     // flatDir {
     //    dir 'libs'
     // }
-    
+
     maven {
         url "https://cursemaven.com"
         content {
             includeGroup "curse.maven"
         }
+    }
+
+    // TODO: Use Controlify from Modrinth maven once this PR is published: https://github.com/isXander/Controlify/pull/689
+    //  and then remove this temporary Maven.
+    exclusiveContent {
+        forRepository { maven { url "https://echoellet.github.io/Controlify/" } }
+        filter { includeGroup "dev.echoellet" }
     }
 }
 
@@ -88,6 +95,9 @@ configurations {
 
 dependencies {
     implementation "curse.maven:epic-fight-mod-405076:7132918"
+
+    // Change "compileOnly" to "implementation" for testing in-game.
+    implementation "dev.echoellet:controlify:2.4.2-1.21.1-neoforge"
 }
 
 var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
