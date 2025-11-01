@@ -18,11 +18,9 @@ repositories {
     //    dir 'libs'
     // }
 
-    maven {
-        url "https://cursemaven.com"
-        content {
-            includeGroup "curse.maven"
-        }
+    exclusiveContent {
+        forRepository { maven { name = "Modrinth"; url = "https://api.modrinth.com/maven" } }
+        filter { includeGroup "maven.modrinth" }
     }
 
     exclusiveContent {
@@ -92,7 +90,7 @@ configurations {
 }
 
 dependencies {
-    implementation "curse.maven:epic-fight-mod-405076:7132918"
+    implementation "maven.modrinth:epic-fight:${project.epicfight_version}"
 
     compileOnly("dev.isxander:controlify:${project.controlify_version}") {
         // Only need Controlify API, ignore the transitive dependencies (e.g, QuiltMC parsers)
