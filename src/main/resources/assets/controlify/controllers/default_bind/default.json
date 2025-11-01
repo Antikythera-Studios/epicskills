@@ -1,0 +1,22 @@
+{
+  "defaults": {
+    "epicskills:move_skill_tree_up": {
+      "axis": "controlify:axis/right_stick_up"
+    },
+    "epicskills:move_skill_tree_down": {
+      "axis": "controlify:axis/right_stick_down"
+    },
+    "epicskills:move_skill_tree_right": {
+      "axis": "controlify:axis/right_stick_right"
+    },
+    "epicskills:move_skill_tree_left": {
+      "axis": "controlify:axis/right_stick_left"
+    },
+    "epicskills:scale_skill_tree_up": {
+      "button": "controlify:button/right_shoulder"
+    },
+    "epicskills:scale_skill_tree_down": {
+      "button": "controlify:button/left_shoulder"
+    }
+  }
+}
