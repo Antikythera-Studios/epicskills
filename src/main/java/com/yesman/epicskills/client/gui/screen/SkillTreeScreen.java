@@ -319,7 +319,7 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
      *
      * @param isNextPage {@code true} to move to the next page, {@code false} to move to the previous page
      * @return {@code true} if navigation succeeded and the current page was updated,
-     *         {@code false} if no page exists in that direction or the current page is invalid
+     *         {@code false} if no page exists in that direction, tree is locked, or the current page is invalid
      */
     public boolean navigateTreePage(boolean isNextPage) {
         final int currentPageIndex = skillTreePages.entrySet().stream()
@@ -331,7 +331,7 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
             return false;
         }
         final int newIndex = isNextPage ? (currentPageIndex + 1) : (currentPageIndex - 1);
-        final boolean canNavigate = skillTreePages.containsKey(newIndex);
+        final boolean canNavigate = skillTreePages.containsKey(newIndex) && skillTreeButtons.get(newIndex).isActive();
         if (!canNavigate) {
             return false;
         }
