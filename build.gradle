@@ -5,6 +5,7 @@ plugins {
     id 'net.minecraftforge.gradle' version '[6.0,6.2)'
     id 'org.spongepowered.mixin' version '0.7.+'
     id 'org.parchmentmc.librarian.forgegradle' version '1.+'
+    id "me.modmuss50.mod-publish-plugin" version "1.1.0"
 }
 
 version = mod_version
@@ -142,4 +143,61 @@ tasks.withType(JavaCompile).configureEach {
 // Create source.jar
 java {
     withSourcesJar()
+}
+
+publishMods {
+    def readme = project.file('RELEASE_NOTES.md')
+    def readmeContent = readme.getText()
+    def pattern = """(?s)## \\[""" + mod_version + """\\] - \\d{4}-\\d{2}-\\d{2}\\R(.*?)(?=\\R### For Devs|\\R## \\[.*?\\] |\\Z)"""
+    def matcher = (readmeContent =~ pattern)
+    matcher.find()
+    
+    // Extract the latest changelog without the header and API change part
+    def latestChangelog = matcher.group(1)
+    
+    // Test run to see the notification works well in discord
+    dryRun = true
+    
+    // The changelog that will be appeared in publishing websites
+    changelog = "Minecraft version: ${minecraft_version}\nForge version: ${forge_version}\n\n" + latestChangelog
+    
+    // The name of the mod loader
+    modLoaders.add("forge")
+    
+	// Type of the release: ALPHA, BETA, STABLE
+	type = STABLE
+	
+	// The name of the file appeared in publishing websites
+	displayName = "epicfight-skilltree-forge-${mod_version}-${minecraft_version}"
+	
+	file = jar.archiveFile
+	additionalFiles.from(tasks.named("sourcesJar").flatMap { it.archiveFile })
+	
+	// Curseforge publishing info
+    curseforge {
+        accessToken = providers.environmentVariable("CURSEFORGE_TOKEN")
+        projectId = "1295882"
+        minecraftVersions.add("1.20.1")
+        projectSlug = "epic-fight-skill-tree"
+    }
+    // Modrinth publishing info
+    modrinth {
+        accessToken = providers.environmentVariable("MODRINTH_TOKEN")
+        projectId = "PezbUFun"
+        minecraftVersions.add("1.20.1")
+    }
+    // Discord webhook and notification settings
+    discord {
+        webhookUrl = providers.environmentVariable("DISCORD_WEBHOOK")
+        dryRunWebhookUrl = providers.environmentVariable("DRY_RUN_DISCORD_WEBHOOK")
+        username = "Update Notification"
+        avatarUrl = "https://i.imgur.com/FrxDviN.png"
+        content = changelog.map { "<@&1074034800849059930>\n# Epic Fight: Skill tree ${mod_version} is out!\nMinecraft version: ${minecraft_version}\nForge version: ${forge_version}\n" + latestChangelog }
+        
+        style {
+			look = "MODERN"
+			link = "EMBED"
+			thumbnailUrl = "https://i.imgur.com/j5kjYkD.png"
+	    }
+    }
 }
