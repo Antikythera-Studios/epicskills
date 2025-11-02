@@ -22,12 +22,21 @@ import dev.isxander.controlify.screenop.ScreenProcessorProvider;
 import dev.isxander.controlify.utils.render.Blit;
 import dev.isxander.controlify.utils.render.CGuiPose;
 import dev.isxander.controlify.virtualmouse.VirtualMouseBehaviour;
+import dev.isxander.controlify.virtualmouse.VirtualMouseHandler;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.NotNull;
 
 public class ControlifyCompat implements ControlifyEntrypoint {
     private static InputBindingSupplier openSkillTreeScreen;
+
+    private static InputBindingSupplier moveSkillTreeUp;
+    private static InputBindingSupplier moveSkillTreeDown;
+    private static InputBindingSupplier moveSkillTreeLeft;
+    private static InputBindingSupplier moveSkillTreeRight;
+
+    private static InputBindingSupplier scaleSkillTreeUp;
+    private static InputBindingSupplier scaleSkillTreeDown;
 
     @Override
     public void onControllersDiscovered(ControlifyApi controlify) {
@@ -43,6 +52,7 @@ public class ControlifyCompat implements ControlifyEntrypoint {
     public void onControlifyPreInit(PreInitContext context) {
         final ControlifyBindApi registrar = ControlifyBindApi.get();
         registerCustomRadialIcons();
+        registrar.registerBindContext(EpicSkillsBindContext.IN_SKILL_TREE);
         registerInputBindings(registrar);
         registerScreenProcessors();
     }
@@ -64,6 +74,10 @@ public class ControlifyCompat implements ControlifyEntrypoint {
     private static void registerCustomRadialIcons() {
         for (EpicSkillsRadialIcons icon : EpicSkillsRadialIcons.values()) {
             final ResourceLocation location = icon.getId();
+
+            // For consistency with the current Controlify radial icons,
+            // this code is equivalent to:
+            // https://github.com/isXander/Controlify/blob/f5c94c57d5e0d4954e413624a0d7ead937b6e8ab/src/main/java/dev/isxander/controlify/bindings/RadialIcons.java#L106-L112
             RadialIcons.registerIcon(location, (graphics, x, y, tickDelta) -> {
                 var pose = CGuiPose.ofPush(graphics);
                 pose.translate(x, y);
@@ -72,6 +86,13 @@ public class ControlifyCompat implements ControlifyEntrypoint {
                 pose.pop();
             });
         }
+    }
+
+    private static class EpicSkillsBindContext {
+        private static final BindContext IN_SKILL_TREE = new BindContext(
+                EpicSkills.rl("in_skill_tree"),
+                mc -> mc.screen instanceof SkillTreeScreen
+        );
     }
 
     private static void registerInputBindings(ControlifyBindApi registrar) {
@@ -85,6 +106,50 @@ public class ControlifyCompat implements ControlifyEntrypoint {
                         .addKeyCorrelation(EpicSkillsKeyMappings.OPEN_SKILL_TREE)
                         .keyEmulation(EpicSkillsKeyMappings.OPEN_SKILL_TREE)
                         .radialCandidate(EpicSkillsRadialIcons.ABILITY_STONE.getId())
+        );
+
+        moveSkillTreeUp = registrar.registerBinding(
+                builder -> builder.id(EpicSkills.rl("move_skill_tree_up"))
+                        .category(guiCategory)
+                        .allowedContexts(EpicSkillsBindContext.IN_SKILL_TREE)
+                        .name(Component.translatable("controller.epicskills.move_skill_tree_up"))
+                        .description(Component.translatable("controller.epicskills.move_skill_tree_up.description"))
+        );
+        moveSkillTreeDown = registrar.registerBinding(
+                builder -> builder.id(EpicSkills.rl("move_skill_tree_down"))
+                        .category(guiCategory)
+                        .allowedContexts(EpicSkillsBindContext.IN_SKILL_TREE)
+                        .name(Component.translatable("controller.epicskills.move_skill_tree_down"))
+                        .description(Component.translatable("controller.epicskills.move_skill_tree_down.description"))
+        );
+        moveSkillTreeLeft = registrar.registerBinding(
+                builder -> builder.id(EpicSkills.rl("move_skill_tree_left"))
+                        .category(guiCategory)
+                        .allowedContexts(EpicSkillsBindContext.IN_SKILL_TREE)
+                        .name(Component.translatable("controller.epicskills.move_skill_tree_left"))
+                        .description(Component.translatable("controller.epicskills.move_skill_tree_left.description"))
+        );
+        moveSkillTreeRight = registrar.registerBinding(
+                builder -> builder.id(EpicSkills.rl("move_skill_tree_right"))
+                        .category(guiCategory)
+                        .allowedContexts(EpicSkillsBindContext.IN_SKILL_TREE)
+                        .name(Component.translatable("controller.epicskills.move_skill_tree_right"))
+                        .description(Component.translatable("controller.epicskills.move_skill_tree_right.description"))
+        );
+
+        scaleSkillTreeUp = registrar.registerBinding(
+                builder -> builder.id(EpicSkills.rl("scale_skill_tree_up"))
+                        .category(guiCategory)
+                        .allowedContexts(EpicSkillsBindContext.IN_SKILL_TREE)
+                        .name(Component.translatable("controller.epicskills.scale_skill_tree_up"))
+                        .description(Component.translatable("controller.epicskills.scale_skill_tree_up.description"))
+        );
+        scaleSkillTreeDown = registrar.registerBinding(
+                builder -> builder.id(EpicSkills.rl("scale_skill_tree_down"))
+                        .category(guiCategory)
+                        .allowedContexts(EpicSkillsBindContext.IN_SKILL_TREE)
+                        .name(Component.translatable("controller.epicskills.scale_skill_tree_down"))
+                        .description(Component.translatable("controller.epicskills.scale_skill_tree_down.description"))
         );
     }
 
@@ -112,8 +177,6 @@ public class ControlifyCompat implements ControlifyEntrypoint {
 
         @Override
         public VirtualMouseBehaviour virtualMouseBehaviour() {
-            // The skill tree screen does not natively support controllers.
-            // To save development time, we work around this issue by enforcing the virtual mouse.
             return VirtualMouseBehaviour.ENABLED;
         }
 
@@ -126,6 +189,53 @@ public class ControlifyCompat implements ControlifyEntrypoint {
 
         private void updateDisableMouseDragging(InputMode mode) {
             screen.setDisableMouseDragging(mode.isController());
+        }
+
+        @Override
+        protected void handleScreenVMouse(ControllerEntity controller, VirtualMouseHandler vmouse) {
+            super.handleScreenVMouse(controller, vmouse);
+
+            handleViewportMove(controller, vmouse);
+            handleViewportScale(controller);
+        }
+
+        private void handleViewportMove(@NotNull ControllerEntity controller, @NotNull VirtualMouseHandler vmouse) {
+            // Ignores "ControlifyBindings.VMOUSE_SCROLL_DOWN" and "ControlifyBindings.VMOUSE_SCROLL_UP" inputs,
+            // since the left thumb stick is used for handle moving the skill tree viewpoint.
+            vmouse.preventScrollingThisTick();
+
+            final float up = moveSkillTreeUp.on(controller).analogueNow();
+            final float down = moveSkillTreeDown.on(controller).analogueNow();
+            final float right = moveSkillTreeRight.on(controller).analogueNow();
+            final float left = moveSkillTreeLeft.on(controller).analogueNow();
+
+            float horizontal = right - left;
+            float vertical = up - down;
+
+            // Dead zone to prevent small jitter
+            final float deadZone = 0.1f;
+            if (Math.abs(horizontal) < deadZone) horizontal = 0.0f;
+            if (Math.abs(vertical) < deadZone) vertical = 0.0f;
+
+            final float sensitivity = 10.0f;
+            final float deltaX = horizontal * sensitivity;
+            final float deltaY = vertical * sensitivity;
+
+            this.screen.moveViewport(
+                    // Flip horizontal delta because increasing "pageLeft" moves the viewport left,
+                    // but positive horizontal input should move the viewport right.
+                    deltaX * -1,
+                    deltaY
+            );
+        }
+
+        private void handleViewportScale(@NotNull ControllerEntity controller) {
+            if (scaleSkillTreeUp.on(controller).guiPressed().get()) {
+                this.screen.scaleUp();
+            }
+            if (scaleSkillTreeDown.on(controller).guiPressed().get()) {
+                this.screen.scaleDown();
+            }
         }
     }
 
@@ -144,14 +254,18 @@ public class ControlifyCompat implements ControlifyEntrypoint {
             super.handleButtons(controller);
         }
 
+        // The Skill info screen has a single actionable button (the "equip skill" button).
+        // Controller navigation and focus are disabled, and only the primary controller
+        // button (e.g., X on DualSense) is used to trigger the action.
+
         @Override
         protected void setInitialFocus() {
-            // No-op
+            // Intentionally empty. Do NOT call super.setInitialFocus().
         }
 
         @Override
         protected void handleComponentNavigation(ControllerEntity controller) {
-            // No-op
+            // Intentionally empty. Do NOT call super.handleComponentNavigation().
         }
 
         @Override

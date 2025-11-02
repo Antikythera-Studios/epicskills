@@ -279,13 +279,17 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
             return false;
         }
 		if (!super.mouseDragged(mouseX, mouseY, button, dragX, dragY)) {
-			this.currentPage.pageLeft += dragX;
-			this.currentPage.pageTop += dragY;
+            moveViewport((float) dragX, (float) dragY);
 			return false;
 		}
 		
 		return true;
 	}
+
+    public void moveViewport(float deltaX, float deltaY) {
+        this.currentPage.pageLeft += deltaX;
+        this.currentPage.pageTop += deltaY;
+    }
 	
 	@Override
 	public boolean mouseScrolled(double x, double y, double xDelta, double yDelta) {
