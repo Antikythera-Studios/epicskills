@@ -23,6 +23,7 @@ import dev.isxander.controlify.utils.render.Blit;
 import dev.isxander.controlify.utils.render.CGuiPose;
 import dev.isxander.controlify.virtualmouse.VirtualMouseBehaviour;
 import dev.isxander.controlify.virtualmouse.VirtualMouseHandler;
+import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.NotNull;
@@ -37,6 +38,12 @@ public class ControlifyCompat implements ControlifyEntrypoint {
 
     private static InputBindingSupplier scaleSkillTreeUp;
     private static InputBindingSupplier scaleSkillTreeDown;
+
+    private static InputBindingSupplier navigateSkillTreeNext;
+    private static InputBindingSupplier navigateSkillTreePrev;
+
+    private static InputBindingSupplier openSkillEditor;
+    private static InputBindingSupplier convertXpToAbilityPoint;
 
     @Override
     public void onControllersDiscovered(ControlifyApi controlify) {
@@ -151,6 +158,36 @@ public class ControlifyCompat implements ControlifyEntrypoint {
                         .name(Component.translatable("controller.epicskills.scale_skill_tree_down"))
                         .description(Component.translatable("controller.epicskills.scale_skill_tree_down.description"))
         );
+
+        navigateSkillTreeNext = registrar.registerBinding(
+                builder -> builder.id(EpicSkills.rl("navigate_skill_tree_next"))
+                        .category(guiCategory)
+                        .allowedContexts(EpicSkillsBindContext.IN_SKILL_TREE)
+                        .name(Component.translatable("controller.epicskills.navigate_skill_tree_next"))
+                        .description(Component.translatable("controller.epicskills.navigate_skill_tree_next.description"))
+        );
+        navigateSkillTreePrev = registrar.registerBinding(
+                builder -> builder.id(EpicSkills.rl("navigate_skill_tree_prev"))
+                        .category(guiCategory)
+                        .allowedContexts(EpicSkillsBindContext.IN_SKILL_TREE)
+                        .name(Component.translatable("controller.epicskills.navigate_skill_tree_prev"))
+                        .description(Component.translatable("controller.epicskills.navigate_skill_tree_prev.description"))
+        );
+
+        openSkillEditor = registrar.registerBinding(
+                builder -> builder.id(EpicSkills.rl("open_skill_editor"))
+                        .category(guiCategory)
+                        .allowedContexts(EpicSkillsBindContext.IN_SKILL_TREE)
+                        .name(Component.translatable("controller.epicskills.open_skill_editor"))
+                        .description(Component.translatable("controller.epicskills.open_skill_editor.description"))
+        );
+        convertXpToAbilityPoint = registrar.registerBinding(
+                builder -> builder.id(EpicSkills.rl("convert_xp_to_ability_point"))
+                        .category(guiCategory)
+                        .allowedContexts(EpicSkillsBindContext.IN_SKILL_TREE)
+                        .name(Component.translatable("controller.epicskills.convert_xp_to_ability_point"))
+                        .description(Component.translatable("controller.epicskills.convert_xp_to_ability_point.description"))
+        );
     }
 
     private static void registerScreenProcessors() {
@@ -197,6 +234,8 @@ public class ControlifyCompat implements ControlifyEntrypoint {
 
             handleViewportMove(controller, vmouse);
             handleViewportScale(controller);
+            handleTreeNavigation(controller);
+            handleOtherActions(controller);
         }
 
         private void handleViewportMove(@NotNull ControllerEntity controller, @NotNull VirtualMouseHandler vmouse) {
@@ -230,12 +269,41 @@ public class ControlifyCompat implements ControlifyEntrypoint {
         }
 
         private void handleViewportScale(@NotNull ControllerEntity controller) {
-            if (scaleSkillTreeUp.on(controller).guiPressed().get()) {
-                this.screen.scaleUp();
+            final boolean isUp = isPressed(scaleSkillTreeUp, controller);
+            final boolean isDown = isPressed(scaleSkillTreeDown, controller);
+            if (isUp || isDown) {
+                if (isUp) {
+                    this.screen.scaleUp();
+                } else {
+                    this.screen.scaleDown();
+                }
+                playClackSound();
             }
-            if (scaleSkillTreeDown.on(controller).guiPressed().get()) {
-                this.screen.scaleDown();
+        }
+
+        private void handleTreeNavigation(@NotNull ControllerEntity controller) {
+            final boolean isNext = isPressed(navigateSkillTreeNext, controller);
+            final boolean isPrev = isPressed(navigateSkillTreePrev, controller);
+
+            if (isNext || isPrev) {
+                final boolean navigated = this.screen.navigateTreePage(isNext);
+                if (navigated) {
+                    SkillTreeScreen.playSkillTreeDownSound(Minecraft.getInstance().getSoundManager());
+                }
             }
+        }
+
+        private void handleOtherActions(@NotNull ControllerEntity controller) {
+            if (isPressed(openSkillEditor, controller)) {
+                this.screen.openSkillEditorScreen();
+                playClackSound();
+            } else if (isPressed(convertXpToAbilityPoint, controller)) {
+                this.screen.expConversionButton.convert();
+            }
+        }
+
+        private boolean isPressed(@NotNull InputBindingSupplier binding, @NotNull ControllerEntity controller) {
+            return binding.on(controller).guiPressed().get();
         }
     }
 

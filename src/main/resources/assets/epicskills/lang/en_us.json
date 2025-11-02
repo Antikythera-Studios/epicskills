@@ -73,5 +73,16 @@
     "controller.epicskills.scale_skill_tree_down": "Scale Skill Tree Down",
     "controller.epicskills.scale_skill_tree_down.description": "Decreases the size of the skill tree when it is open.",
 
-	"eof": "eof"
+    "controller.epicskills.navigate_skill_tree_next": "Next Skill Tree Page",
+    "controller.epicskills.navigate_skill_tree_next.description": "Moves to the next page of the skill tree when it is open.",
+    "controller.epicskills.navigate_skill_tree_prev": "Previous Skill Tree Page",
+    "controller.epicskills.navigate_skill_tree_prev.description": "Moves to the previous page of the skill tree when it is open.",
+
+    "controller.epicskills.open_skill_editor": "Open Skill Editor",
+    "controller.epicskills.open_skill_editor.description": "Opens the skill editor screen from the skill tree.",
+    "controller.epicskills.convert_xp_to_ability_point": "Convert XP to Ability Points",
+    "controller.epicskills.convert_xp_to_ability_point.description": "Exchanges XP for skill points when the skill tree is open.",
+
+
+  "eof": "eof"
 }
