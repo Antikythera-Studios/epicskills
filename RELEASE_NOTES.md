@@ -4,7 +4,11 @@
 ## [21.2.3 - Unreleased]
 
 ### Changed:
-- Improved the Controlify compatibility by allowing scaling and moving the viewpoint when using a controller.
+
+- Improved [Controlify mod](https://modrinth.com/mod/controlify) compatibility by allowing:
+    - Scaling and moving the skill tree viewport using the right thumbstick.
+    - Navigating between skill tree pages using the left and right shoulder buttons.
+    - Opening the skill editor using the north button and converting XP to an ability point using the west button.
 
 ## [21.2.2] - 2025-11-01
 
