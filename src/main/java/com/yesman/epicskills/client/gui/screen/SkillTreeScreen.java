@@ -44,6 +44,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 import yesman.epicfight.api.utils.ParseUtil;
 import yesman.epicfight.api.utils.math.Vec2i;
 import yesman.epicfight.client.gui.screen.SkillEditScreen;
@@ -76,7 +77,7 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
 	private final Map<Integer, TreePage> skillTreePages = new HashMap<> ();
 	private final Map<Integer, TreeSelectButton> skillTreeButtons = new HashMap<> ();
 	
-	private final ExpToAbilityPointConverstionButton expConversionButton;
+	public final ExpToAbilityPointConverstionButton expConversionButton;
 	private final Button scaleUpButton;
 	private final Button scaleDownButton;
 	
@@ -310,6 +311,36 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
 		this.currentPage = this.skillTreePages.get(index);
 		this.relocateScaleButtons();
 	}
+
+    /**
+     * Navigates to the next or previous skill tree page.
+     *
+     * <p>Navigation occurs only if a page exists in the requested direction.</p>
+     *
+     * @param isNextPage {@code true} to move to the next page, {@code false} to move to the previous page
+     * @return {@code true} if navigation succeeded and the current page was updated,
+     *         {@code false} if no page exists in that direction, tree is locked, or the current page is invalid
+     */
+    public boolean navigateTreePage(boolean isNextPage) {
+        final int currentPageIndex = skillTreePages.entrySet().stream()
+                .filter(entry -> entry.getValue() == currentPage)
+                .map(Map.Entry::getKey)
+                .findFirst()
+                .orElse(-1);
+        if (currentPageIndex == -1) {
+            return false;
+        }
+        final int newIndex = isNextPage ? (currentPageIndex + 1) : (currentPageIndex - 1);
+        final boolean canNavigate = skillTreePages.containsKey(newIndex) && skillTreeButtons.get(newIndex).isActive();
+        if (!canNavigate) {
+            return false;
+        }
+        setTreeIndex(newIndex);
+        skillTreeButtons.forEach((index, button) -> {
+            button.setFocused(index == newIndex);
+        });
+        return true;
+    }
 	
 	public void scaleUp() {
 		int nextScale = Math.min(6, (this.nodeScale == -1 ? (int)this.minecraft.getWindow().getGuiScale() : this.nodeScale) + 1);
@@ -381,7 +412,7 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
 			}, Button.DEFAULT_NARRATION);
 			this.skillTree = skillTree;
 		}
-		
+
 		@Override
 		public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
 			if (SkillTreeScreen.this.backgroundMode) {
@@ -407,10 +438,14 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
 		}
 		
 		@Override
-		public void playDownSound(SoundManager pHandler) {
-			pHandler.play(SimpleSoundInstance.forUI(EpicSkillsSounds.HOVER.get(), 1.0F, 1.0F));
+		public void playDownSound(@NotNull SoundManager pHandler) {
+            playSkillTreeDownSound(pHandler);
 		}
 	}
+
+    public static void playSkillTreeDownSound(@NotNull SoundManager manager) {
+        manager.play(SimpleSoundInstance.forUI(EpicSkillsSounds.HOVER.get(), 1.0F, 1.0F));
+    }
 	
 	@OnlyIn(Dist.CLIENT)
 	public class ExpToAbilityPointConverstionButton extends AbstractButton {
@@ -425,7 +460,7 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
 		}
 		
 		public void tick() {
-			this.active = SkillTreeScreen.this.player.totalExperience >= SkillTreeScreen.this.playerAbilityPoints.getRequiredExp();
+			this.active = canConvert();
 			this.hoverTickO = this.hoverTick;
 			
 			if (this.isHovered() && this.active) {
@@ -481,10 +516,7 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
 		
 		@Override
 		public void onPress() {
-			if (!SkillTreeScreen.this.synclock) {
-				EpicFightNetworkManager.sendToServer(new ServerBoundConvertAbilityPointRequest());
-				SkillTreeScreen.this.synclock = true;
-			}
+			convert();
 		}
 		
 		@Override
@@ -495,6 +527,20 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
 		@Override
 		public void playDownSound(SoundManager handler) {
 		}
+
+        private boolean canConvert() {
+            return SkillTreeScreen.this.player.totalExperience >= SkillTreeScreen.this.playerAbilityPoints.getRequiredExp();
+        }
+
+        public void convert() {
+            if (!isActive()) {
+                return;
+            }
+            if (!SkillTreeScreen.this.synclock) {
+                EpicFightNetworkManager.sendToServer(new ServerBoundConvertAbilityPointRequest());
+                SkillTreeScreen.this.synclock = true;
+            }
+        }
 	}
 	
 	@OnlyIn(Dist.CLIENT)
@@ -518,9 +564,13 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
 		
 		@Override
 		public void onPress() {
-			minecraft.setScreen(new SkillEditScreen(player, playerSkills));
+            openSkillEditorScreen();
 		}
 	}
+
+    public void openSkillEditorScreen() {
+        Objects.requireNonNull(minecraft).setScreen(new SkillEditScreen(player, playerSkills));
+    }
 	
 	@OnlyIn(Dist.CLIENT)
 	public class AbilityPointsMeter extends AbstractWidget {

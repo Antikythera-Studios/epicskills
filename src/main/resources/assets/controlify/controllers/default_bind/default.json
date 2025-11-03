@@ -13,10 +13,22 @@
       "axis": "controlify:axis/right_stick_left"
     },
     "epicskills:scale_skill_tree_up": {
-      "button": "controlify:button/right_shoulder"
+      "axis": "controlify:axis/right_trigger"
     },
     "epicskills:scale_skill_tree_down": {
+      "axis": "controlify:axis/left_trigger"
+    },
+    "epicskills:navigate_skill_tree_next": {
+      "button": "controlify:button/right_shoulder"
+    },
+    "epicskills:navigate_skill_tree_prev": {
       "button": "controlify:button/left_shoulder"
+    },
+    "epicskills:open_skill_editor": {
+      "button": "controlify:button/north"
+    },
+    "epicskills:convert_xp_to_ability_point": {
+      "button": "controlify:button/west"
     }
   }
 }
