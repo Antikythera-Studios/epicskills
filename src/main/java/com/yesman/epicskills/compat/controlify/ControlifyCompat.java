@@ -318,6 +318,7 @@ public class ControlifyCompat implements ControlifyEntrypoint {
         protected void handleButtons(ControllerEntity controller) {
             if (ACTION.on(controller).guiPressed().get()) {
                 screen.getActionButton().onPress();
+                playClackSound();
             }
             super.handleButtons(controller);
         }
