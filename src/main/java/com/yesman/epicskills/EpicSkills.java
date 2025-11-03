@@ -1,7 +1,5 @@
 package com.yesman.epicskills;
 
-import org.slf4j.Logger;
-
 import com.mojang.logging.LogUtils;
 import com.yesman.epicskills.client.gui.screen.CategorySlotTexture;
 import com.yesman.epicskills.client.gui.screen.SkillTreeScreen;
@@ -15,7 +13,7 @@ import com.yesman.epicskills.skilltree.SkillTree;
 import com.yesman.epicskills.skilltree.SkillTreeEntry;
 import com.yesman.epicskills.world.capability.AbilityPoints;
 import com.yesman.epicskills.world.capability.SkillTreeProgression;
-
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.MinecraftForge;
@@ -28,6 +26,8 @@ import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.registries.DataPackRegistryEvent;
+import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
 import yesman.epicfight.main.EpicFightSharedConstants;
 import yesman.epicfight.world.item.EpicFightCreativeTabs;
 
@@ -111,4 +111,8 @@ public class EpicSkills {
         	event.enqueueWork(CategorySlotTexture.ENUM_MANAGER::loadEnum);
         }
 	}
+
+    public static @NotNull ResourceLocation rl(@NotNull final String path) {
+        return ResourceLocation.fromNamespaceAndPath(MODID, path);
+    }
 }
