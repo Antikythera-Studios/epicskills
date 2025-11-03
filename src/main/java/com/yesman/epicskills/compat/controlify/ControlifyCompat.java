@@ -298,7 +298,7 @@ public class ControlifyCompat implements ControlifyEntrypoint {
                 this.screen.openSkillEditorScreen();
                 playClackSound();
             } else if (isPressed(convertXpToAbilityPoint, controller)) {
-                this.screen.expConversionButton.convert();
+                this.screen.getExpConversionButton().convert();
             }
         }
 

@@ -77,7 +77,7 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
 	private final Map<Integer, TreePage> skillTreePages = new HashMap<> ();
 	private final Map<Integer, TreeSelectButton> skillTreeButtons = new HashMap<> ();
 	
-	public final ExpToAbilityPointConverstionButton expConversionButton;
+	private final ExpToAbilityPointConverstionButton expConversionButton;
 	private final Button scaleUpButton;
 	private final Button scaleDownButton;
 	
@@ -386,6 +386,10 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
 		return this.discarded;
 	}
 
+    public ExpToAbilityPointConverstionButton getExpConversionButton() {
+        return expConversionButton;
+    }
+
     public boolean isDisableMouseDragging() {
         return disableMouseDragging;
     }
@@ -534,6 +538,10 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
 
         public void convert() {
             if (!isActive()) {
+                // Ensure conversion only occurs when active.
+                // This is important when convert() is called directly (e.g., via controller input).
+                // Without this check, the player could lose XP without gaining
+                // an ability point if they don't have enough XP.
                 return;
             }
             if (!SkillTreeScreen.this.synclock) {
