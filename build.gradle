@@ -159,11 +159,14 @@ publishMods {
     def matcher = (readmeContent =~ pattern)
     matcher.find()
 
+    // No publishing without matching changelog
+    if (!matcher.hasMatch()) return;
+
     // Extract the latest changelog without the header and API change part
     def latestChangelog = matcher.group(1)
 
     // Test run to see the notification works well in discord
-    dryRun = false
+    dryRun = true
 
     // The changelog that will be appeared in publishing websites
     changelog = "Minecraft version: ${minecraft_version}\nNeoForge version: ${neo_version}\n\n" + latestChangelog
