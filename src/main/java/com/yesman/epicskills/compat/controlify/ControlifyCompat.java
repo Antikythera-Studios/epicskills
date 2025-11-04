@@ -298,7 +298,7 @@ public class ControlifyCompat implements ControlifyEntrypoint {
                 this.screen.openSkillEditorScreen();
                 playClackSound();
             } else if (isPressed(convertXpToAbilityPoint, controller)) {
-                this.screen.expConversionButton.convert();
+                this.screen.getExpConversionButton().convert();
             }
         }
 
@@ -318,6 +318,7 @@ public class ControlifyCompat implements ControlifyEntrypoint {
         protected void handleButtons(ControllerEntity controller) {
             if (ACTION.on(controller).guiPressed().get()) {
                 screen.getActionButton().onPress();
+                playClackSound();
             }
             super.handleButtons(controller);
         }
