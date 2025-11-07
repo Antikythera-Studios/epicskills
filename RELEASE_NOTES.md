@@ -1,6 +1,11 @@
 # Epic Fight: Skill Tree in Minecraft 1.21.1 Changelog
 # Changelog on publishing websites and Discord will be parsed between version header ([x.x.x] - yyyy-mm-dd) and (For Devs) section
 
+## [21.2.4] - Unreleased
+
+### For Devs
+- Adopted KeyConflictContext for each keybind as documented by [Neoforge](https://docs.neoforged.net/docs/misc/keymappings/#ikeyconflictcontext) to avoid potential problem from inconsistency
+
 ## [21.2.3] - 2025-11-04
 
 ### Changed:
