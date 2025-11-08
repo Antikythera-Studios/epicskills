@@ -5,6 +5,8 @@
 
 ### For Devs
 - Adopted KeyConflictContext for each keybind as documented by [Neoforge](https://docs.neoforged.net/docs/misc/keymappings/#ikeyconflictcontext) to avoid potential problem from inconsistency
+- Avoid shadowing the private `ControlEngine#playerpatch` property from Epic Fight; instead, depend on the public `getPlayerPatch()` instead to avoid future breakage.
+- Avoid depending on the deprecated `ControlEngine#isKeyDown` to avoid future breakage.
 
 ## [21.2.3] - 2025-11-04
 
