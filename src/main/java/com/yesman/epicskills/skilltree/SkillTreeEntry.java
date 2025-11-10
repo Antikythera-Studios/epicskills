@@ -54,7 +54,7 @@ public record SkillTreeEntry(List<Node> nodes, int workPriority) {
 		})
 	);
 	
-	public static record ParentLink(Skill parentSkill, @Nullable List<Vec2i> controlPoints) {
+	public record ParentLink(Skill parentSkill, @Nullable List<Vec2i> controlPoints) {
 		public static final Codec<ParentLink> CODEC = RecordCodecBuilder.create(instance ->
 			instance.group(
 				SKILL_CODEC.fieldOf("skill").forGetter(ParentLink::parentSkill),
@@ -64,7 +64,7 @@ public record SkillTreeEntry(List<Node> nodes, int workPriority) {
 		);
 	}
 	
-	public static record Node(Skill skill, @Nullable List<ParentLink> parents, @Nullable EntityPredicate unlockCondition, boolean hasCustomUnlockCondition, @Nullable Component unlockTip, int requiredAbilityPoints, Vec2i positionInScreen, boolean hidden, @Nullable ResourceLocation importFrom) {
+	public record Node(Skill skill, @Nullable List<ParentLink> parents, @Nullable EntityPredicate unlockCondition, boolean hasCustomUnlockCondition, @Nullable Component unlockTip, int requiredAbilityPoints, Vec2i positionInScreen, boolean hidden, @Nullable ResourceLocation importFrom) {
 		public static final Codec<Node> CODEC = RecordCodecBuilder.create(instance ->
 			instance.group(
 				SKILL_CODEC.fieldOf("skill").forGetter(Node::skill),
@@ -73,7 +73,7 @@ public record SkillTreeEntry(List<Node> nodes, int workPriority) {
 					JsonElement serialized = node.unlockCondition() == null ? null : EntityPredicate.CODEC.encodeStart(JsonOps.INSTANCE, node.unlockCondition()).getOrThrow();
 					return Optional.ofNullable(serialized);
 				}),
-				Codec.BOOL.optionalFieldOf("custom_condition").forGetter(node -> Optional.ofNullable(node.hidden())),
+				Codec.BOOL.optionalFieldOf("custom_condition").forGetter(node -> Optional.ofNullable(node.hasCustomUnlockCondition())),
 				Codec.STRING.optionalFieldOf("unlock_tip").forGetter(node -> node.unlockTip() == null ? Optional.empty() : Optional.of(((TranslatableContents)((MutableComponent)node.unlockTip()).getContents()).getKey())),
 				Codec.INT.optionalFieldOf("ability_points").forGetter(node -> Optional.ofNullable(node.requiredAbilityPoints())),
 				VEC2_INT_CODEC.fieldOf("position_in_screen").forGetter(Node::positionInScreen),

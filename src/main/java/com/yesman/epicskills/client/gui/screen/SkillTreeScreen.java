@@ -695,6 +695,8 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
 		
 		@OnlyIn(Dist.CLIENT)
 		public class NodeButton extends AbstractButton {
+            private static final ResourceLocation LOCKER_ICON = ResourceLocation.fromNamespaceAndPath(EpicSkills.MODID, "textures/gui/widget/locker.png");
+
 			private final SkillTreeProgression.TopDownTreeNode treeNode;
 			private final List<Pair<NodeButton, List<Vec2i>>> parents = new ArrayList<> ();
 			private final CategorySlotTexture categoryTexture;
@@ -802,7 +804,7 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
 				
 				if (buttonTexture == ButtonStateTexture.LOCKED && !this.treeNode.nodeInfo().noUnlockConditions()) {
 					guiGraphics.innerBlit(
-						ResourceLocation.fromNamespaceAndPath(EpicSkills.MODID, "textures/gui/widget/locker.png"),
+                        LOCKER_ICON,
 						this.getX() - widthHalf,
 						this.getX() + widthHalf,
 						this.getY() - heightHalf,
