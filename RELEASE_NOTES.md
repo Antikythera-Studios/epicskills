@@ -3,6 +3,9 @@
 
 ## [20.2.3] - Unreleased
 
+### Fixed
+- Fixed the skills with a custom unlock condition is not applied in dedicated servers [#13](https://github.com/Epic-Fight/epicskills/issues/13)
+
 ### For Devs
 - Adopted KeyConflictContext for each keybind as documented by [Neoforge](https://docs.neoforged.net/docs/misc/keymappings/#ikeyconflictcontext) to avoid potential problem from inconsistency
 

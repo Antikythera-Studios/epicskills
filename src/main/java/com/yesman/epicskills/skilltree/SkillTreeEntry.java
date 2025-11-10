@@ -71,7 +71,7 @@ public record SkillTreeEntry(List<Node> nodes, int workPriority) {
 					JsonElement serialized = node.unlockCondition() == null ? null : JsonUtil.removeNullElements(node.unlockCondition().serializeToJson());
 					return Optional.ofNullable(serialized);
 				}),
-				Codec.BOOL.optionalFieldOf("custom_condition").forGetter(node -> Optional.ofNullable(node.hidden())),
+				Codec.BOOL.optionalFieldOf("custom_condition").forGetter(node -> Optional.ofNullable(node.hasCustomUnlockCondition())),
 				Codec.STRING.optionalFieldOf("unlock_tip").forGetter(node -> node.unlockTip() == null ? Optional.empty() : Optional.of(((TranslatableContents)((MutableComponent)node.unlockTip()).getContents()).getKey())),
 				Codec.INT.optionalFieldOf("ability_points").forGetter(node -> Optional.ofNullable(node.requiredAbilityPoints())),
 				VEC2_INT_CODEC.fieldOf("position_in_screen").forGetter(Node::positionInScreen),
