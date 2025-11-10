@@ -52,8 +52,29 @@
 	"commands.epicskills.skilltree_progression.failed": "Failed to execute command due to invalid player data",
 	
 	"key.epicskills.gui": "Epic Fight: Skill Tree GUI",
-	
-	"key.epicskills.open_skill_tree": "Open Skill Tree",
+
+  "key.epicskills.open_skill_tree": "Open Skill Tree",
+  "key.epicskills.open_skill_tree.description": "Opens the Epic Fight skill tree screen",
+  "controller.epicskills.move_skill_tree_up": "Move Skill Tree Up",
+  "controller.epicskills.move_skill_tree_up.description": "Moves the skill tree viewport upward when the skill tree is open.",
+  "controller.epicskills.move_skill_tree_down": "Move Skill Tree Down",
+  "controller.epicskills.move_skill_tree_down.description": "Moves the skill tree viewport downward when the skill tree is open.",
+  "controller.epicskills.move_skill_tree_left": "Move Skill Tree Left",
+  "controller.epicskills.move_skill_tree_left.description": "Moves the skill tree viewport leftward when the skill tree is open.",
+  "controller.epicskills.move_skill_tree_right": "Move Skill Tree Right",
+  "controller.epicskills.move_skill_tree_right.description": "Moves the skill tree viewport rightward when the skill tree is open.",
+  "controller.epicskills.scale_skill_tree_up": "Scale Skill Tree Up",
+  "controller.epicskills.scale_skill_tree_up.description": "Increases the size of the skill tree when it is open.",
+  "controller.epicskills.scale_skill_tree_down": "Scale Skill Tree Down",
+  "controller.epicskills.scale_skill_tree_down.description": "Decreases the size of the skill tree when it is open.",
+  "controller.epicskills.navigate_skill_tree_next": "Next Skill Tree Page",
+  "controller.epicskills.navigate_skill_tree_next.description": "Moves to the next page of the skill tree when it is open.",
+  "controller.epicskills.navigate_skill_tree_prev": "Previous Skill Tree Page",
+  "controller.epicskills.navigate_skill_tree_prev.description": "Moves to the previous page of the skill tree when it is open.",
+  "controller.epicskills.open_skill_editor": "Open Skill Editor",
+  "controller.epicskills.open_skill_editor.description": "Opens the skill editor screen from the skill tree.",
+  "controller.epicskills.convert_xp_to_ability_point": "Convert XP to Ability Points",
+  "controller.epicskills.convert_xp_to_ability_point.description": "Exchanges XP for skill points when the skill tree is open.",
 	
 	"eof": "eof"
 }
