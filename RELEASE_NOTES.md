@@ -3,6 +3,14 @@
 
 ## [20.2.3] - Unreleased
 
+### Added
+
+- Built-in Controlify integration for controller support.
+  No need to install
+  [Epic Fight: Controlify](https://www.curseforge.com/minecraft/mc-mods/epic-fight-controlify) anymore.
+  Install only
+  [Controlify: Forgified](https://www.curseforge.com/minecraft/mc-mods/controlify-forgified-unofficial) on 1.20.1
+
 ### Fixed
 - Fixed the skills with a custom unlock condition is not applied in dedicated servers [#13](https://github.com/Epic-Fight/epicskills/issues/13)
 

@@ -70,12 +70,16 @@ repositories {
     // flatDir {
     //     dir 'libs'
     // }
-    
-    maven {
-        url "https://cursemaven.com"
-        content {
-            includeGroup "curse.maven"
-        }
+
+    exclusiveContent {
+        forRepository { maven { name = "Modrinth"; url = "https://api.modrinth.com/maven" } }
+        forRepositories(fg.repository)
+        filter { includeGroup "maven.modrinth" }
+    }
+    exclusiveContent {
+        forRepository { maven { url "https://echoellet.github.io/Controlify/" } }
+        forRepositories(fg.repository)
+        filter { includeGroup "dev.echoellet" }
     }
 }
 
@@ -87,9 +91,12 @@ mixin {
 dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
 	
-    implementation fg.deobf("curse.maven:epic-fight-mod-405076:7129220-sources-7129223")
+    implementation fg.deobf("maven.modrinth:epic-fight:${project.epicfight_version}")
     
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
+
+    compileOnly fg.deobf("dev.echoellet:controlify-forgified:${project.controlify_version}")
+    runtimeOnly fg.deobf("maven.modrinth:yacl:3.6.6+1.20.1-forge") // Required dependency to run Controlify
 }
 
 tasks.named('processResources', ProcessResources).configure {
@@ -150,34 +157,34 @@ publishMods {
     def readmeContent = readme.getText()
     def pattern = """(?s)## \\[""" + mod_version + """\\] - \\d{4}-\\d{2}-\\d{2}\\R(.*?)(?=\\R### For Devs|\\R## \\[.*?\\] |\\Z)"""
     def found = matcher.find()
-    
+
     // No publishing without matching changelog
     if (!found) {
     	println ("No matching changelog found for version ${mod_version} in RELEASE_NOTES.md. Publishing is skipped.")
     	return
     }
-    
+
     // Extract the latest changelog without the header and API change part
     def latestChangelog = matcher.group(1)
-    
+
     // Test run to see the notification works well in discord
     dryRun = false
-    
+
     // The changelog that will be appeared in publishing websites
     changelog = "Minecraft version: ${minecraft_version}\nForge version: ${forge_version}\n\n" + latestChangelog
-    
+
     // The name of the mod loader
     modLoaders.add("forge")
-    
+
 	// Type of the release: ALPHA, BETA, STABLE
 	type = STABLE
-	
+
 	// The name of the file appeared in publishing websites
 	displayName = "epicfight-skilltree-forge-${mod_version}-${minecraft_version}"
-	
+
 	file = jar.archiveFile
 	additionalFiles.from(tasks.named("sourcesJar").flatMap { it.archiveFile })
-	
+
 	// Curseforge publishing info
     curseforge {
         accessToken = providers.environmentVariable("CURSEFORGE_TOKEN")
@@ -198,7 +205,7 @@ publishMods {
         username = "Update Notification"
         avatarUrl = "https://i.imgur.com/FrxDviN.png"
         content = changelog.map { "<@&1074034800849059930>\n# Epic Fight: Skill tree ${mod_version} is out!\nMinecraft version: ${minecraft_version}\nForge version: ${forge_version}\n" + latestChangelog }
-        
+
         style {
 			look = "MODERN"
 			link = "EMBED"
