@@ -156,6 +156,7 @@ publishMods {
     def readme = project.file('RELEASE_NOTES.md')
     def readmeContent = readme.getText()
     def pattern = """(?s)## \\[""" + mod_version + """\\] - \\d{4}-\\d{2}-\\d{2}\\R(.*?)(?=\\R### For Devs|\\R## \\[.*?\\] |\\Z)"""
+    def matcher = (readmeContent =~ pattern)
     def found = matcher.find()
 
     // No publishing without matching changelog
