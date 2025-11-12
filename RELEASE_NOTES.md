@@ -1,7 +1,7 @@
 # Epic Fight: Skill Tree in Minecraft 1.21.1 Changelog
 # Changelog on publishing websites and Discord will be parsed between version header ([x.x.x] - yyyy-mm-dd) and (For Devs) section
 
-## [21.2.4] - Unreleased
+## [21.2.4] - 2025-11-12
 
 ### Fixed
 - Fixed the skills with a custom unlock condition is not applied in dedicated servers
