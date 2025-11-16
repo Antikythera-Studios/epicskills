@@ -330,16 +330,19 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
         if (currentPageIndex == -1) {
             return false;
         }
-        final int newIndex = isNextPage ? (currentPageIndex + 1) : (currentPageIndex - 1);
-        final boolean canNavigate = skillTreePages.containsKey(newIndex) && skillTreeButtons.get(newIndex).isActive();
-        if (!canNavigate) {
-            return false;
+        final int step = isNextPage ? 1 : -1;
+        int newIndex = currentPageIndex + step;
+
+        while (skillTreePages.containsKey(newIndex)) {
+            final boolean canNavigate = skillTreeButtons.get(newIndex).isActive();
+            if (canNavigate) {
+                setTreeIndex(newIndex);
+                setFocused(skillTreeButtons.get(newIndex));
+                return true;
+            }
+            newIndex += step;
         }
-        setTreeIndex(newIndex);
-        skillTreeButtons.forEach((index, button) -> {
-            button.setFocused(index == newIndex);
-        });
-        return true;
+        return false;
     }
 	
 	public void scaleUp() {
