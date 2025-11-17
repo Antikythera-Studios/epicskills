@@ -1,25 +1,8 @@
 package com.yesman.epicskills.client.gui.screen;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Objects;
-import java.util.function.Function;
-
-import org.apache.commons.lang3.mutable.MutableInt;
-import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.NotNull;
-
 import com.google.common.collect.ImmutableMap;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.BufferUploader;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.Tesselator;
-import com.mojang.blaze3d.vertex.VertexFormat;
+import com.mojang.blaze3d.vertex.*;
 import com.mojang.datafixers.util.Pair;
 import com.yesman.epicskills.EpicSkills;
 import com.yesman.epicskills.client.gui.screen.SkillTreeScreen.TreePage.NodeButton;
@@ -34,7 +17,6 @@ import com.yesman.epicskills.world.capability.SkillTreeProgression;
 import com.yesman.epicskills.world.capability.SkillTreeProgression.ImportedNode;
 import com.yesman.epicskills.world.capability.SkillTreeProgression.NodeState;
 import com.yesman.epicskills.world.capability.SkillTreeProgression.TopDownTreeNode;
-
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -63,6 +45,9 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import org.apache.commons.lang3.mutable.MutableInt;
+import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 import yesman.epicfight.api.utils.ParseUtil;
 import yesman.epicfight.api.utils.math.Vec2i;
 import yesman.epicfight.client.gui.screen.SkillEditScreen;
@@ -71,6 +56,9 @@ import yesman.epicfight.main.EpicFightMod;
 import yesman.epicfight.skill.Skill;
 import yesman.epicfight.world.capabilities.skill.CapabilitySkill;
 import yesman.epicfight.world.item.EpicFightItems;
+
+import java.util.*;
+import java.util.function.Function;
 
 @OnlyIn(Dist.CLIENT)
 public class SkillTreeScreen extends Screen implements BackgroundRenderableScreen {
@@ -343,16 +331,19 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
         if (currentPageIndex == -1) {
             return false;
         }
-        final int newIndex = isNextPage ? (currentPageIndex + 1) : (currentPageIndex - 1);
-        final boolean canNavigate = skillTreePages.containsKey(newIndex) && skillTreeButtons.get(newIndex).isActive();
-        if (!canNavigate) {
-            return false;
+        final int step = isNextPage ? 1 : -1;
+        int newIndex = currentPageIndex + step;
+
+        while (skillTreePages.containsKey(newIndex)) {
+            final boolean canNavigate = skillTreeButtons.get(newIndex).isActive();
+            if (canNavigate) {
+                setTreeIndex(newIndex);
+                setFocused(skillTreeButtons.get(newIndex));
+                return true;
+            }
+            newIndex += step;
         }
-        setTreeIndex(newIndex);
-        skillTreeButtons.forEach((index, button) -> {
-            button.setFocused(index == newIndex);
-        });
-        return true;
+        return false;
     }
 	
 	public void scaleUp() {
