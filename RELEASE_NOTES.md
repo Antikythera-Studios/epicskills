@@ -1,7 +1,7 @@
 # Epic Fight: Skill Tree in Minecraft 1.21.1 Changelog
 # Changelog on publishing websites and Discord will be parsed between version header ([x.x.x] - yyyy-mm-dd) and (For Devs) section
 
-## [21.2.5] - Unreleased
+## [21.2.5] - 2025-12-07
 
 ### Changed
 
