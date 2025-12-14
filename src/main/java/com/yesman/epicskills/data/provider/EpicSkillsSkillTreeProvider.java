@@ -162,7 +162,7 @@ public class EpicSkillsSkillTreeProvider extends SkillTreeProvider {
 				.done()
 				.newNode(EpicFightSkills.ENDURANCE)
 					.position(180, 30)
-					.importFrom(ResourceLocation.fromNamespaceAndPath(EpicSkills.MODID, "battleborn"))
+					.importFrom(EpicSkills.identifier("battleborn"))
 				.done()
 				.newNode(EpicFightSkills.ADAPTIVE_SKIN)
 					.addParent(EpicFightSkills.FORBIDDEN_STRENGTH)

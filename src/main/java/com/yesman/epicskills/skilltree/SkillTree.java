@@ -21,7 +21,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.ExtraCodecs;
 
 public record SkillTree(Vec3i menuBarColor, @Nullable EntityPredicate conditions, @Nullable Component unlockTip, boolean locked, boolean hiddenWhenLocked, boolean disabled, int priority) {
-	public static final ResourceKey<Registry<SkillTree>> SKILL_TREE_REGISTRY_KEY = ResourceKey.createRegistryKey(ResourceLocation.fromNamespaceAndPath(EpicSkills.MODID, "tree"));
+	public static final ResourceKey<Registry<SkillTree>> SKILL_TREE_REGISTRY_KEY = ResourceKey.createRegistryKey(EpicSkills.identifier("tree"));
 	
 	public static final Codec<SkillTree> CODEC = RecordCodecBuilder.create(instance -> 
 		instance.group(
