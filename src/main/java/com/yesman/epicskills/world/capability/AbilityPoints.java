@@ -139,8 +139,8 @@ public class AbilityPoints {
 			this.requiredExpLevel = nbt.getInt("requiredExpLevel");
 		}
 	}
-	
-	private static final ResourceLocation ABILITY_POINTS_CAPABILITY_KEY = ResourceLocation.fromNamespaceAndPath(EpicSkills.MODID, "ability_points");
+
+    private static final ResourceLocation ABILITY_POINTS_CAPABILITY_KEY = EpicSkills.identifier("ability_points");
 	
 	public static void epicskills$attachCapabilities(AttachCapabilitiesEvent<Entity> event) {
 		if (event.getObject().getType() == EntityType.PLAYER && !event.getCapabilities().containsKey(ABILITY_POINTS_CAPABILITY_KEY)) {

@@ -64,7 +64,7 @@ public class ControlifyCompat implements ControlifyEntrypoint {
     }
 
     private enum EpicSkillsRadialIcons {
-        ABILITY_STONE(EpicSkills.rl("textures/item/ability_stone.png"));
+        ABILITY_STONE(EpicSkills.identifier("textures/item/ability_stone.png"));
 
         private final @NotNull ResourceLocation id;
 
@@ -96,7 +96,7 @@ public class ControlifyCompat implements ControlifyEntrypoint {
 
     private static class EpicSkillsBindContext {
         private static final BindContext IN_SKILL_TREE = new BindContext(
-                EpicSkills.rl("in_skill_tree"),
+                EpicSkills.identifier("in_skill_tree"),
                 mc -> mc.screen instanceof SkillTreeScreen
         );
     }
@@ -104,7 +104,7 @@ public class ControlifyCompat implements ControlifyEntrypoint {
     private static void registerInputBindings(ControlifyBindApi registrar) {
         final Component guiCategory = Component.translatable("key.epicfight.gui");
         openSkillTreeScreen = registrar.registerBinding(
-                builder -> builder.id(EpicSkills.rl("attack"))
+                builder -> builder.id(EpicSkills.identifier("attack"))
                         .category(guiCategory)
                         .allowedContexts(BindContext.IN_GAME)
                         .name(Component.translatable("key.epicskills.open_skill_tree"))
@@ -115,28 +115,28 @@ public class ControlifyCompat implements ControlifyEntrypoint {
         );
 
         moveSkillTreeUp = registrar.registerBinding(
-                builder -> builder.id(EpicSkills.rl("move_skill_tree_up"))
+                builder -> builder.id(EpicSkills.identifier("move_skill_tree_up"))
                         .category(guiCategory)
                         .allowedContexts(EpicSkillsBindContext.IN_SKILL_TREE)
                         .name(Component.translatable("controller.epicskills.move_skill_tree_up"))
                         .description(Component.translatable("controller.epicskills.move_skill_tree_up.description"))
         );
         moveSkillTreeDown = registrar.registerBinding(
-                builder -> builder.id(EpicSkills.rl("move_skill_tree_down"))
+                builder -> builder.id(EpicSkills.identifier("move_skill_tree_down"))
                         .category(guiCategory)
                         .allowedContexts(EpicSkillsBindContext.IN_SKILL_TREE)
                         .name(Component.translatable("controller.epicskills.move_skill_tree_down"))
                         .description(Component.translatable("controller.epicskills.move_skill_tree_down.description"))
         );
         moveSkillTreeLeft = registrar.registerBinding(
-                builder -> builder.id(EpicSkills.rl("move_skill_tree_left"))
+                builder -> builder.id(EpicSkills.identifier("move_skill_tree_left"))
                         .category(guiCategory)
                         .allowedContexts(EpicSkillsBindContext.IN_SKILL_TREE)
                         .name(Component.translatable("controller.epicskills.move_skill_tree_left"))
                         .description(Component.translatable("controller.epicskills.move_skill_tree_left.description"))
         );
         moveSkillTreeRight = registrar.registerBinding(
-                builder -> builder.id(EpicSkills.rl("move_skill_tree_right"))
+                builder -> builder.id(EpicSkills.identifier("move_skill_tree_right"))
                         .category(guiCategory)
                         .allowedContexts(EpicSkillsBindContext.IN_SKILL_TREE)
                         .name(Component.translatable("controller.epicskills.move_skill_tree_right"))
@@ -144,14 +144,14 @@ public class ControlifyCompat implements ControlifyEntrypoint {
         );
 
         scaleSkillTreeUp = registrar.registerBinding(
-                builder -> builder.id(EpicSkills.rl("scale_skill_tree_up"))
+                builder -> builder.id(EpicSkills.identifier("scale_skill_tree_up"))
                         .category(guiCategory)
                         .allowedContexts(EpicSkillsBindContext.IN_SKILL_TREE)
                         .name(Component.translatable("controller.epicskills.scale_skill_tree_up"))
                         .description(Component.translatable("controller.epicskills.scale_skill_tree_up.description"))
         );
         scaleSkillTreeDown = registrar.registerBinding(
-                builder -> builder.id(EpicSkills.rl("scale_skill_tree_down"))
+                builder -> builder.id(EpicSkills.identifier("scale_skill_tree_down"))
                         .category(guiCategory)
                         .allowedContexts(EpicSkillsBindContext.IN_SKILL_TREE)
                         .name(Component.translatable("controller.epicskills.scale_skill_tree_down"))
@@ -159,14 +159,14 @@ public class ControlifyCompat implements ControlifyEntrypoint {
         );
 
         navigateSkillTreeNext = registrar.registerBinding(
-                builder -> builder.id(EpicSkills.rl("navigate_skill_tree_next"))
+                builder -> builder.id(EpicSkills.identifier("navigate_skill_tree_next"))
                         .category(guiCategory)
                         .allowedContexts(EpicSkillsBindContext.IN_SKILL_TREE)
                         .name(Component.translatable("controller.epicskills.navigate_skill_tree_next"))
                         .description(Component.translatable("controller.epicskills.navigate_skill_tree_next.description"))
         );
         navigateSkillTreePrev = registrar.registerBinding(
-                builder -> builder.id(EpicSkills.rl("navigate_skill_tree_prev"))
+                builder -> builder.id(EpicSkills.identifier("navigate_skill_tree_prev"))
                         .category(guiCategory)
                         .allowedContexts(EpicSkillsBindContext.IN_SKILL_TREE)
                         .name(Component.translatable("controller.epicskills.navigate_skill_tree_prev"))
@@ -174,14 +174,14 @@ public class ControlifyCompat implements ControlifyEntrypoint {
         );
 
         openSkillEditor = registrar.registerBinding(
-                builder -> builder.id(EpicSkills.rl("open_skill_editor"))
+                builder -> builder.id(EpicSkills.identifier("open_skill_editor"))
                         .category(guiCategory)
                         .allowedContexts(EpicSkillsBindContext.IN_SKILL_TREE)
                         .name(Component.translatable("controller.epicskills.open_skill_editor"))
                         .description(Component.translatable("controller.epicskills.open_skill_editor.description"))
         );
         convertXpToAbilityPoint = registrar.registerBinding(
-                builder -> builder.id(EpicSkills.rl("convert_xp_to_ability_point"))
+                builder -> builder.id(EpicSkills.identifier("convert_xp_to_ability_point"))
                         .category(guiCategory)
                         .allowedContexts(EpicSkillsBindContext.IN_SKILL_TREE)
                         .name(Component.translatable("controller.epicskills.convert_xp_to_ability_point"))

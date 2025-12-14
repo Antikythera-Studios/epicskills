@@ -771,11 +771,11 @@ public class SkillTreeProgression {
 		
 		// Add unlock awaiting node
 	}
-	
-	/*********************
-	 *   Provider part   *
-	 *********************/
-	private static final ResourceLocation SKILL_TREE_PROGRESSION_CAPABILITY_KEY = ResourceLocation.fromNamespaceAndPath(EpicSkills.MODID, "skill_tree_progression");
+
+    /*********************
+     *   Provider part   *
+     *********************/
+    private static final ResourceLocation SKILL_TREE_PROGRESSION_CAPABILITY_KEY = EpicSkills.identifier("skill_tree_progression");
 	
 	public static void epicskills$attachCapabilities(AttachCapabilitiesEvent<Entity> event) {
 		if (event.getObject().getType() == EntityType.PLAYER && !event.getCapabilities().containsKey(SKILL_TREE_PROGRESSION_CAPABILITY_KEY)) {
