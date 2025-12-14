@@ -3,9 +3,7 @@
 	"minVersion": "0.8",
 	"compatibilityLevel": "JAVA_21",
 	"package": "com.yesman.epicskills.mixin",
-	"client": [
-		"MixinControlEngine"
-	],
+	"client": [],
 	"mixins": [
 	],
 	"injectors": {
