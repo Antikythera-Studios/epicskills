@@ -22,7 +22,7 @@ import net.minecraftforge.common.loot.LootModifier;
 
 public class AbilityStoneLootModifier extends LootModifier {
 	public static final Codec<AbilityStoneLootModifier> CODEC = RecordCodecBuilder.create(inst -> LootModifier.codecStart(inst).apply(inst, AbilityStoneLootModifier::new));
-	public static final TagKey<EntityType<?>> ABILITY_STONE_DROPPER_TAG = TagKey.create(Registries.ENTITY_TYPE, ResourceLocation.fromNamespaceAndPath(EpicSkills.MODID, "ability_stone_dropper"));
+	public static final TagKey<EntityType<?>> ABILITY_STONE_DROPPER_TAG = TagKey.create(Registries.ENTITY_TYPE, EpicSkills.identifier("ability_stone_dropper"));
 	
 	protected AbilityStoneLootModifier(LootItemCondition[] conditions) {
 		super(conditions);

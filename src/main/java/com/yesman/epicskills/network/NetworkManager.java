@@ -25,11 +25,11 @@ public class NetworkManager {
 	
 	public static final SimpleChannel INSTANCE =
 		NetworkRegistry.newSimpleChannel(
-			ResourceLocation.fromNamespaceAndPath(EpicSkills.MODID, "network_manager"),
-			() -> PROTOCOL_VERSION,
-			PROTOCOL_VERSION::equals,
-			PROTOCOL_VERSION::equals
-		);
+                EpicSkills.identifier("network_manager"),
+                () -> PROTOCOL_VERSION,
+                PROTOCOL_VERSION::equals,
+                PROTOCOL_VERSION::equals
+        );
 
 	public static <MSG> void sendToServer(MSG message) {
 		INSTANCE.sendToServer(message);

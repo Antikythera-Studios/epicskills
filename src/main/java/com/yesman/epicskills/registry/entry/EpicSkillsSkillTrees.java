@@ -13,6 +13,6 @@ import net.minecraft.resources.ResourceLocation;
  * See {@link SkillTreeProgression#unlockNode(ResourceKey, Skill, ServerPlayer)}, {@link SkillTreeProgression#lockNode(ResourceKey, Skill, boolean, ServerPlayer)}
  */
 public interface EpicSkillsSkillTrees {
-	ResourceKey<SkillTree> BATTLEBORN = ResourceKey.create(SkillTree.SKILL_TREE_REGISTRY_KEY, ResourceLocation.fromNamespaceAndPath(EpicSkills.MODID, "battleborn"));
-	ResourceKey<SkillTree> INFERNAL_MIGHT = ResourceKey.create(SkillTree.SKILL_TREE_REGISTRY_KEY, ResourceLocation.fromNamespaceAndPath(EpicSkills.MODID, "infernal_might"));
+	ResourceKey<SkillTree> BATTLEBORN = ResourceKey.create(SkillTree.SKILL_TREE_REGISTRY_KEY, EpicSkills.identifier("battleborn"));
+	ResourceKey<SkillTree> INFERNAL_MIGHT = ResourceKey.create(SkillTree.SKILL_TREE_REGISTRY_KEY, EpicSkills.identifier("infernal_might"));
 }
