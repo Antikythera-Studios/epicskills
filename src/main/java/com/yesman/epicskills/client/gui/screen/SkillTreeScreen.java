@@ -404,10 +404,10 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
 	@OnlyIn(Dist.CLIENT)
 	public class TreeSelectButton extends Button implements HoverSoundPlayer {
 		protected static final WidgetSprites SPRITES = new WidgetSprites(
-	        ResourceLocation.fromNamespaceAndPath(EpicSkills.MODID, "widget/skill_tree_button"),
-	        ResourceLocation.fromNamespaceAndPath(EpicSkills.MODID, "widget/skill_tree_button_disabled"),
-	        ResourceLocation.fromNamespaceAndPath(EpicSkills.MODID, "widget/skill_tree_button_highlighted")
-	    );
+				EpicSkills.identifier("widget/skill_tree_button"),
+				EpicSkills.identifier("widget/skill_tree_button_disabled"),
+				EpicSkills.identifier("widget/skill_tree_button_highlighted")
+		);
 		
 		private final Holder.Reference<SkillTree> skillTree;
 		
@@ -585,7 +585,7 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
 	
 	@OnlyIn(Dist.CLIENT)
 	public class AbilityPointsMeter extends AbstractWidget {
-		private static final ResourceLocation ABILITY_POINTS_ICON = ResourceLocation.fromNamespaceAndPath(EpicSkills.MODID, "textures/gui/widget/ability_points.png");
+		private static final ResourceLocation ABILITY_POINTS_ICON = EpicSkills.identifier("textures/gui/widget/ability_points.png");
 		private static final Component ABILITY_POINTS_TOOLTIP = Component.translatable("gui.epicskills.abilitypoints.tooltip");
 		
 		public AbilityPointsMeter(int x, int y) {
@@ -698,7 +698,7 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
 		
 		@OnlyIn(Dist.CLIENT)
 		public class NodeButton extends AbstractButton {
-            private static final ResourceLocation LOCKER_ICON = ResourceLocation.fromNamespaceAndPath(EpicSkills.MODID, "textures/gui/widget/locker.png");
+			private static final ResourceLocation LOCKER_ICON = EpicSkills.identifier("textures/gui/widget/locker.png");
 
 			private final SkillTreeProgression.TopDownTreeNode treeNode;
 			private final List<Pair<NodeButton, List<Vec2i>>> parents = new ArrayList<> ();
@@ -755,16 +755,13 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
 				if (buttonTexture == ButtonStateTexture.ACQUIRED && SkillTreeScreen.this.playerSkills.isEquipping(this.getSkill())) {
 					buttonTexture = ButtonStateTexture.EQUIPPED;
 				}
-				
+
 				ResourceLocation nodeTexture =
-					ResourceLocation.fromNamespaceAndPath(
-						EpicSkills.MODID,
-						String.format(
-							"textures/gui/widget/node/%s/%s.png",
-							ParseUtil.toLowerCase(this.treeNode.nodeInfo().skill().getCategory().toString()),
-							ParseUtil.toLowerCase(buttonTexture.name())
-						)
-					);
+						EpicSkills.identifier(String.format(
+								"textures/gui/widget/node/%s/%s.png",
+								ParseUtil.toLowerCase(this.treeNode.nodeInfo().skill().getCategory().toString()),
+								ParseUtil.toLowerCase(buttonTexture.name())
+						));
 				
 				if (this.importedNode) {
 					RenderSystem.enableBlend();

@@ -42,7 +42,7 @@ public record SkillTreeEntry(List<Node> nodes, int workPriority) {
 		return Integer.compare(e2.workPriority(), e1.workPriority());
 	}
 	
-	public static final ResourceKey<Registry<SkillTreeEntry>> SKILL_TREE_ENTRY_REGISTRY_KEY = ResourceKey.createRegistryKey(ResourceLocation.fromNamespaceAndPath(EpicSkills.MODID, "entry"));
+	public static final ResourceKey<Registry<SkillTreeEntry>> SKILL_TREE_ENTRY_REGISTRY_KEY = ResourceKey.createRegistryKey(EpicSkills.identifier("entry"));
 	
 	public static final Codec<SkillTreeEntry> CODEC = RecordCodecBuilder.create(instance -> 
 		instance.group(

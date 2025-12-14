@@ -16,7 +16,7 @@ public abstract class EpicSkillsSounds {
 	public static final DeferredHolder<SoundEvent, SoundEvent> GAIN_ABILITY_POINTS = registerSound("ui.gain_ability_points");
 	
 	private static DeferredHolder<SoundEvent, SoundEvent> registerSound(String name) {
-		ResourceLocation res = ResourceLocation.fromNamespaceAndPath(EpicSkills.MODID, name);
+        ResourceLocation res = EpicSkills.identifier(name);
 		return REGISTRY.register(name, () -> SoundEvent.createVariableRangeEvent(res));
 	}
 }
