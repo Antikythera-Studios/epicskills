@@ -1,6 +1,18 @@
 # Epic Fight: Skill Tree in Minecraft 1.21.1 Changelog
 # Changelog on publishing websites and Discord will be parsed between version header ([x.x.x] - yyyy-mm-dd) and (For Devs) section
 
+## [21.2.6] - 2025-12-17
+
+### Changed
+
+- Internal changes for better code quality
+
+### For Devs
+
+- Deprecated `EpicFightMod.rl` and added `EpicFightMod.identifier` since
+  [Mojang renamed `ResourceLocation` to
+  `Identifier` in 1.21.11](https://neoforged.net/news/21.11release/#renaming-of-resourcelocation-to-identifier).
+
 ## [21.2.5] - 2025-12-07
 
 ### Changed
