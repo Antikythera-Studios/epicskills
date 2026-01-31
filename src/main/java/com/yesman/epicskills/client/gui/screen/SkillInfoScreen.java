@@ -21,6 +21,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
+import yesman.epicfight.EpicFight;
 import yesman.epicfight.client.gui.datapack.screen.MessageScreen;
 import yesman.epicfight.client.gui.screen.SkillBookScreen;
 import yesman.epicfight.client.gui.screen.SlotSelectScreen;
@@ -210,9 +211,9 @@ public class SkillInfoScreen extends SkillBookScreen {
 	@OnlyIn(Dist.CLIENT)
 	private class LearnButton extends Button {
 		protected static final WidgetSprites SPRITES = new WidgetSprites(
-	        ResourceLocation.fromNamespaceAndPath(EpicFightMod.MODID, "widget/skillbook_button"),
-	        ResourceLocation.fromNamespaceAndPath(EpicFightMod.MODID, "widget/skillbook_button_disabled"),
-	        ResourceLocation.fromNamespaceAndPath(EpicFightMod.MODID, "widget/skillbook_button_highlighted")
+	        ResourceLocation.fromNamespaceAndPath(EpicFight.MODID, "widget/skillbook_button"),
+	        ResourceLocation.fromNamespaceAndPath(EpicFight.MODID, "widget/skillbook_button_disabled"),
+	        ResourceLocation.fromNamespaceAndPath(EpicFight.MODID, "widget/skillbook_button_highlighted")
 	    );
 		
 		private final Tooltip customTooltip;

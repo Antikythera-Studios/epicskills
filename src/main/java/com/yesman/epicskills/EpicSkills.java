@@ -1,6 +1,8 @@
 package com.yesman.epicskills;
 
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
+import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 
@@ -27,6 +29,7 @@ import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.registries.DataPackRegistryEvent;
+import yesman.epicfight.api.event.EpicFightEventHooks;
 import yesman.epicfight.main.EpicFightSharedConstants;
 import yesman.epicfight.registry.entries.EpicFightCreativeTabs;
 
@@ -58,14 +61,15 @@ public class EpicSkills {
 	public EpicSkills(IEventBus modEventBus, ModContainer modContainer) {
         modEventBus.addListener(this::epicskills$newDataPackRegistryEvent);
         modEventBus.addListener(this::epicskills$buildCreativeTabContents);
-        
+        modEventBus.addListener(this::epicskills$fmlSetup);
+
         EpicSkillsSounds.REGISTRY.register(modEventBus);
         EpicSkillsItems.REGISTRY.register(modEventBus);
         EpicSkillsAttachmentTypes.REGISTRY.register(modEventBus);
         EpicSkillsGlobalLootModifer.GLOBAL_LOOT_LOOT_MODIFIERS.register(modEventBus);
-        
+
         NeoForge.EVENT_BUS.addListener(this::epicskills$registerCommands);
-        
+
         if (EpicFightSharedConstants.isPhysicalClient()) {
         	CategorySlotTexture.ENUM_MANAGER.registerEnumCls(EpicSkills.MODID, SkillTreeScreen.TreePage.NodeButton.CategorySlotTextures.class);
         }
@@ -86,7 +90,35 @@ public class EpicSkills {
 			event.accept(EpicSkillsItems.ABILIITY_STONE.get().getDefaultInstance());
 		}
 	}
-	
+
+    private void epicskills$fmlSetup(FMLCommonSetupEvent event) {
+        EpicFightEventHooks.Entity.NBT_LOAD.registerEvent(nbtLoadEvent -> {
+            nbtLoadEvent.getEntityPatch().getOriginal().getExistingData(EpicSkillsAttachmentTypes.ABILITY_POINTS).ifPresent(abilityPoints -> {
+                abilityPoints.deserializeFrom(nbtLoadEvent.getCompound().getCompound("abilityPoints"));
+            });
+
+            nbtLoadEvent.getEntityPatch().getOriginal().getExistingData(EpicSkillsAttachmentTypes.SKILL_TREE_PROGRESSION).ifPresent(skillTreeProgression -> {
+                skillTreeProgression.deserializeFrom(nbtLoadEvent.getCompound().getCompound("skillTreeProgression"));
+            });
+        });
+
+        EpicFightEventHooks.Entity.NBT_SAVE.registerEvent(nbtSaveEvent -> {
+            nbtSaveEvent.getEntityPatch().getOriginal().getExistingData(EpicSkillsAttachmentTypes.ABILITY_POINTS).ifPresent(abilityPoints -> {
+                CompoundTag compound = new CompoundTag();
+                abilityPoints.serializeTo(compound);
+
+                nbtSaveEvent.getCompound().put("abilityPoints", compound);
+            });
+
+            nbtSaveEvent.getEntityPatch().getOriginal().getExistingData(EpicSkillsAttachmentTypes.SKILL_TREE_PROGRESSION).ifPresent(skillTreeProgression -> {
+                CompoundTag compound = new CompoundTag();
+                skillTreeProgression.serializeTo(compound);
+
+                nbtSaveEvent.getCompound().put("skillTreeProgression", compound);
+            });
+        });
+    }
+
 	@EventBusSubscriber(modid = EpicSkills.MODID, value = Dist.CLIENT)
     public static class ClientModEvents {
         @SubscribeEvent

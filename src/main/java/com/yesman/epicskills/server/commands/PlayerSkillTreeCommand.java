@@ -78,7 +78,7 @@ public class PlayerSkillTreeCommand {
 																command,
 																EntityArgument.getPlayers(command, "targets"),
 																ResourceArgument.getResource(command, "skilltree", SkillTree.SKILL_TREE_REGISTRY_KEY),
-																SkillArgument.getSkill(command, "skill"),
+                                                                command.getArgument("skill", Holder.class),
 																Action.UNLOCK,
 																BoolArgumentType.getBool(command, "force"),
 																false
@@ -90,7 +90,7 @@ public class PlayerSkillTreeCommand {
 														command,
 														EntityArgument.getPlayers(command, "targets"),
 														ResourceArgument.getResource(command, "skilltree", SkillTree.SKILL_TREE_REGISTRY_KEY),
-														SkillArgument.getSkill(command, "skill"),
+                                                        command.getArgument("skill", Holder.class),
 														Action.UNLOCK,
 														false,
 														false
@@ -134,7 +134,7 @@ public class PlayerSkillTreeCommand {
 																		command,
 																		EntityArgument.getPlayers(command, "targets"),
 																		ResourceArgument.getResource(command, "skilltree", SkillTree.SKILL_TREE_REGISTRY_KEY),
-																		SkillArgument.getSkill(command, "skill"),
+																		command.getArgument("skill", Holder.class),
 																		Action.LOCK,
 																		BoolArgumentType.getBool(command, "force"),
 																		BoolArgumentType.getBool(command, "unequip")
@@ -146,7 +146,7 @@ public class PlayerSkillTreeCommand {
 																command,
 																EntityArgument.getPlayers(command, "targets"),
 																ResourceArgument.getResource(command, "skilltree", SkillTree.SKILL_TREE_REGISTRY_KEY),
-																SkillArgument.getSkill(command, "skill"),
+																command.getArgument("skill", Holder.class),
 																Action.LOCK,
 																BoolArgumentType.getBool(command, "force"),
 																false
@@ -158,7 +158,7 @@ public class PlayerSkillTreeCommand {
 														command,
 														EntityArgument.getPlayers(command, "targets"),
 														ResourceArgument.getResource(command, "skilltree", SkillTree.SKILL_TREE_REGISTRY_KEY),
-														SkillArgument.getSkill(command, "skill"),
+														command.getArgument("skill", Holder.class),
 														Action.LOCK,
 														false,
 														false

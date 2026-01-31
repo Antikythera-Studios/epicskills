@@ -25,7 +25,7 @@ import net.neoforged.neoforge.event.entity.EntityEvent.EntityConstructing;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
-import yesman.epicfight.api.neoevent.HandleEntityDataEvent;
+import yesman.epicfight.api.event.types.entity.HandleEntityDataEvent;
 import yesman.epicfight.network.EpicFightNetworkManager;
 import yesman.epicfight.world.gamerule.EpicFightGameRules;
 
@@ -100,34 +100,6 @@ public abstract class GameEvents {
 				abilityPoints.serializeTo(compound);
 				abilityPoints$2.deserializeFrom(compound);
 			});
-		});
-	}
-	
-	@SubscribeEvent
-	public static void epicskills$handleEntityDataEventSave(HandleEntityDataEvent.Save event) {
-		event.getEntityPatch().getOriginal().getExistingData(EpicSkillsAttachmentTypes.ABILITY_POINTS).ifPresent(abilityPoints -> {
-			CompoundTag compound = new CompoundTag();
-			abilityPoints.serializeTo(compound);
-			
-			event.getCompound().put("abilityPoints", compound);
-		});
-		
-		event.getEntityPatch().getOriginal().getExistingData(EpicSkillsAttachmentTypes.SKILL_TREE_PROGRESSION).ifPresent(skillTreeProgression -> {
-			CompoundTag compound = new CompoundTag();
-			skillTreeProgression.serializeTo(compound);
-			
-			event.getCompound().put("skillTreeProgression", compound);
-		});
-	}
-	
-	@SubscribeEvent
-	public static void epicskills$handleEntityDataEventLoad(HandleEntityDataEvent.Load event) {
-		event.getEntityPatch().getOriginal().getExistingData(EpicSkillsAttachmentTypes.ABILITY_POINTS).ifPresent(abilityPoints -> {
-			abilityPoints.deserializeFrom(event.getCompound().getCompound("abilityPoints"));
-		});
-		
-		event.getEntityPatch().getOriginal().getExistingData(EpicSkillsAttachmentTypes.SKILL_TREE_PROGRESSION).ifPresent(skillTreeProgression -> {
-			skillTreeProgression.deserializeFrom(event.getCompound().getCompound("skillTreeProgression"));
 		});
 	}
 	
