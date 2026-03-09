@@ -31,6 +31,13 @@ public class AbilityPoints {
 	public static final int INIT_EXP_REQUIREMENT = 7;
 	
 	/**
+	 * Returns {@link AbilityPoints} data belongs to a player
+     */
+    public static LazyOptional<AbilityPoints> getAbilityPoints(Player player) {
+        return player.getCapability(ABILITY_POINTS);
+    }
+	
+	/**
 	 * Vanilla copy from {@link net.minecraft.world.entity.player.Player#getXpNeededForNextLevel()}
 	 */
 	public static int getXpNeededForNextLevel(int expLevel) {

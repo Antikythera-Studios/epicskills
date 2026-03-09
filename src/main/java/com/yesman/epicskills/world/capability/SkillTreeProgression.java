@@ -75,16 +75,44 @@ public class SkillTreeProgression {
 		this.registryAccess = registryAccess;
 		this.player = player;
 		
-		this.reload(false);
+		this.reload(false, false);
 	}
 	
 	public void reload(boolean readOldData) {
+		reload(readOldData, false);
+	}
+	
+	public void reload(boolean readOldData, boolean returnAP) {
 		CompoundTag compound = null;
 		
 		if (readOldData) {
 			compound = new CompoundTag();
 			this.serializeTo(compound);
+			
+			// points shouldn't be returned if this reload is by registry sync
+			returnAP = false;
 		}
+		
+		if (!player.level().isClientSide() && returnAP) {
+            int allocatedPoints = 0;
+
+            for (Map<Skill, TopDownTreeNode> pageNodes : this.nodes.values()) {
+                for (TopDownTreeNode node : pageNodes.values()) {
+                    if (!node.isImported() && node.nodeState() == NodeState.UNLOCKED) {
+                        allocatedPoints += node.nodeInfo().requiredAbilityPoints();
+                    }
+                }
+            }
+
+            if (allocatedPoints > 0) {
+                AbilityPoints abilityPoints = AbilityPoints.getAbilityPoints(player).orElse(null);
+
+                if (abilityPoints != null) {
+                    abilityPoints.setAbilityPoints(abilityPoints.getAbilityPoints() + allocatedPoints);
+                    abilityPoints.markDirty();
+                }
+            }
+        }
 		
 		this.treeStates.clear();
 		this.nodes.clear();

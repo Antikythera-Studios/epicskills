@@ -49,7 +49,7 @@ public abstract class GameEvents {
 		if (event.getPlayer() == null) {
 			for (ServerPlayer serverPlayer : event.getPlayers()) {
 				serverPlayer.getCapability(SkillTreeProgression.SKILL_TREE_PROGRESSION).ifPresent(skillTreeProgression -> {
-					skillTreeProgression.reload(true);
+					skillTreeProgression.reload(true, false);
 					NetworkManager.sendToPlayer(new ClientBoundReloadSkillTree(true), serverPlayer);
 				});
 			}

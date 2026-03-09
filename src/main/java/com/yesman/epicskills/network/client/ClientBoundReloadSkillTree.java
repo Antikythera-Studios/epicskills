@@ -20,7 +20,8 @@ public record ClientBoundReloadSkillTree(boolean readOldData) {
 	public static void handle(ClientBoundReloadSkillTree msg, Supplier<NetworkEvent.Context> ctx) {
 		ctx.get().enqueueWork(() -> {
 			NetworkManager.getPlayerInClient().getCapability(SkillTreeProgression.SKILL_TREE_PROGRESSION).ifPresent(skillTreeProgression -> {
-				skillTreeProgression.reload(msg.readOldData);
+				// Ability points are always returned in server side. No need to care about sync returnAP parameter.
+				skillTreeProgression.reload(msg.readOldData, false);
 			});
 		});
 		

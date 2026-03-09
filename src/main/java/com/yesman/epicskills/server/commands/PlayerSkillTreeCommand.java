@@ -52,11 +52,18 @@ public class PlayerSkillTreeCommand {
 							Commands
 								.argument("targets", EntityArgument.players())
 								.executes(command -> {
-									return proccessSkillTreeCommand(command, EntityArgument.getPlayers(command, "targets"), null, null, Action.RESET, true, false);
+									return proccessSkillTreeCommand(command, EntityArgument.getPlayers(command, "targets"), null, null, Action.RESET, true, false, false);
 								})
+								.then(
+                                    Commands
+                                        .argument("return_points", BoolArgumentType.bool())
+                                        .executes(command -> {
+                                            return proccessSkillTreeCommand(command, EntityArgument.getPlayers(command, "targets"), null, null, Action.RESET, true, false, BoolArgumentType.getBool(command, "return_points"));
+                                        })
+                                )
 						)
 						.executes(command -> {
-							return proccessSkillTreeCommand(command, ImmutableList.of(command.getSource().getPlayerOrException()), null, null, Action.RESET, true, false);
+							return proccessSkillTreeCommand(command, ImmutableList.of(command.getSource().getPlayerOrException()), null, null, Action.RESET, true, false, false);
 						})
 				)
 				.then(
@@ -82,6 +89,7 @@ public class PlayerSkillTreeCommand {
 																SkillArgument.getSkill(command, "skill"),
 																Action.UNLOCK,
 																BoolArgumentType.getBool(command, "force"),
+																false,
 																false
 															);
 														})
@@ -94,6 +102,7 @@ public class PlayerSkillTreeCommand {
 														SkillArgument.getSkill(command, "skill"),
 														Action.UNLOCK,
 														false,
+														false,
 														false
 													);
 												})
@@ -105,6 +114,7 @@ public class PlayerSkillTreeCommand {
 												ResourceArgument.getResource(command, "skilltree", SkillTree.SKILL_TREE_REGISTRY_KEY),
 												null,
 												Action.UNLOCK_TREE,
+												false,
 												false,
 												false
 											);
@@ -138,7 +148,8 @@ public class PlayerSkillTreeCommand {
 																		SkillArgument.getSkill(command, "skill"),
 																		Action.LOCK,
 																		BoolArgumentType.getBool(command, "force"),
-																		BoolArgumentType.getBool(command, "unequip")
+																		BoolArgumentType.getBool(command, "unequip"),
+																		false
 																	);
 																})
 														)
@@ -150,6 +161,7 @@ public class PlayerSkillTreeCommand {
 																SkillArgument.getSkill(command, "skill"),
 																Action.LOCK,
 																BoolArgumentType.getBool(command, "force"),
+																false,
 																false
 															);
 														})
@@ -161,6 +173,7 @@ public class PlayerSkillTreeCommand {
 														ResourceArgument.getResource(command, "skilltree", SkillTree.SKILL_TREE_REGISTRY_KEY),
 														SkillArgument.getSkill(command, "skill"),
 														Action.LOCK,
+														false,
 														false,
 														false
 													);
@@ -180,7 +193,8 @@ public class PlayerSkillTreeCommand {
 																null,
 																Action.LOCK_TREE,
 																BoolArgumentType.getBool(command, "force"),
-																BoolArgumentType.getBool(command, "unequip")
+																BoolArgumentType.getBool(command, "unequip"),
+																false
 															);
 														})
 												)
@@ -192,6 +206,7 @@ public class PlayerSkillTreeCommand {
 														null,
 														Action.LOCK_TREE,
 														BoolArgumentType.getBool(command, "force"),
+														false,
 														false
 													);
 												})
@@ -204,6 +219,7 @@ public class PlayerSkillTreeCommand {
 												null,
 												Action.LOCK_TREE,
 												false,
+												false,
 												false
 											);
 										})
@@ -213,7 +229,7 @@ public class PlayerSkillTreeCommand {
 		);
 	}
 	
-	private static int proccessSkillTreeCommand(CommandContext<CommandSourceStack> command, Collection<ServerPlayer> players, @Nullable Holder.Reference<SkillTree> skillTree, @Nullable Skill skill, Action action, boolean force, boolean unequip) throws CommandSyntaxException {
+	private static int proccessSkillTreeCommand(CommandContext<CommandSourceStack> command, Collection<ServerPlayer> players, @Nullable Holder.Reference<SkillTree> skillTree, @Nullable Skill skill, Action action, boolean force, boolean unequip, boolean returnsAP) throws CommandSyntaxException {
 		int done = 0;
 		
 		if (players.isEmpty()) {
@@ -223,7 +239,7 @@ public class PlayerSkillTreeCommand {
 		switch (action) {
 		case RESET -> {
 			for (ServerPlayer player : players) {
-				if (resetTree(player)) {
+				if (resetTree(player, returnsAP)) {
 					done++;
 				}
 			}
@@ -293,9 +309,9 @@ public class PlayerSkillTreeCommand {
 		return done;
 	}
 	
-	private static boolean resetTree(ServerPlayer player) {
+	private static boolean resetTree(ServerPlayer player, boolean returnsAP) {
 		player.getCapability(SkillTreeProgression.SKILL_TREE_PROGRESSION).ifPresent(skillTreeProgression -> {
-			skillTreeProgression.reload(false);
+			skillTreeProgression.reload(false, returnsAP);
 			NetworkManager.sendToPlayer(new ClientBoundReloadSkillTree(false), player);
 		});
 		
