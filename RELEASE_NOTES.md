@@ -1,6 +1,12 @@
 # Epic Fight: Skill Tree in Minecraft 1.21.1 Changelog
 # Changelog on publishing websites and Discord will be parsed between version header ([x.x.x] - yyyy-mm-dd) and (For Devs) section
 
+## [21.3.2] - 2026-03-10
+
+- Added an option to skill tree reset command where players will be returned the ability points they've spent so far
+    - Usage: /skilltree reset [targetplayers] [return_points]
+    - [return_points]: true or false value
+
 ## [21.3.1] - 2026-01-31
 
 ### Changed

@@ -14,7 +14,8 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 public interface EpicSkillsClientBoundPayloadHandler {
 	public static void handleReloadSkillTree(final ClientBoundReloadSkillTree data, final IPayloadContext context) {
 		context.player().getExistingData(EpicSkillsAttachmentTypes.SKILL_TREE_PROGRESSION).ifPresent(skillTreeProgression -> {
-			skillTreeProgression.reload(data.readOldData());
+            // Ability points are always returned in server side. No need to care about sync returnAP parameter.
+            skillTreeProgression.reload(data.readOldData(), false);
 		});
 	}
 	

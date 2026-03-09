@@ -3,6 +3,7 @@ package com.yesman.epicskills.neoforge.attachment;
 import com.mojang.serialization.JsonOps;
 import com.yesman.epicskills.network.client.ClientBoundSetAbilityPoints;
 
+import com.yesman.epicskills.registry.entry.EpicSkillsAttachmentTypes;
 import net.minecraft.advancements.critereon.EntityPredicate;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
@@ -11,6 +12,8 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.neoforge.attachment.IAttachmentHolder;
 import yesman.epicfight.network.EpicFightNetworkManager;
+
+import java.util.Optional;
 
 public class AbilityPoints {
 	public static final int INIT_EXP_REQUIREMENT = 7;
@@ -25,7 +28,14 @@ public class AbilityPoints {
 			return expLevel >= 15 ? 37 + (expLevel - 15) * 5 : 7 + expLevel * 2;
 		}
 	}
-	
+
+    /// Returns [AbilityPoints] data belongs to a player
+    ///
+    /// NOTE: [Player#getExistingData] won't initialize if data is empty
+    public static Optional<AbilityPoints> getAbilityPoints(Player player) {
+        return player.getExistingData(EpicSkillsAttachmentTypes.ABILITY_POINTS);
+    }
+
 	private int abilityPoint = 0;
 	private int requiredExp = INIT_EXP_REQUIREMENT;
 	private int requiredExpLevel = 0;

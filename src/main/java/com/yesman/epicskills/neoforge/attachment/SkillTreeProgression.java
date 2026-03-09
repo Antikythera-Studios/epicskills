@@ -39,6 +39,7 @@ import net.minecraft.world.entity.player.Player;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.attachment.IAttachmentHolder;
+import org.jetbrains.annotations.ApiStatus;
 import yesman.epicfight.api.utils.ParseUtil;
 import yesman.epicfight.network.EpicFightNetworkManager;
 import yesman.epicfight.registry.EpicFightRegistries;
@@ -62,17 +63,47 @@ public class SkillTreeProgression {
 			throw new IllegalArgumentException(attachmentHolder + " is not a subtype of Player");
 		}
 		
-		this.reload(false);
+		this.reload(false, false);
 	}
-	
-	public void reload(boolean readOldData) {
+
+    public void reload(boolean readOldData) {
+        reload(readOldData, false);
+    }
+
+    /// @param readOldData  Reload all skills after resetting the skill tree. Used by syncing datapack registry changes.
+    /// @param returnPoints Returns the ability points allocated so far
+	public void reload(boolean readOldData, boolean returnPoints) {
 		CompoundTag compound = null;
 		
 		if (readOldData) {
 			compound = new CompoundTag();
 			this.serializeTo(compound);
+
+            // points shouldn't be returned if this reload is by registry sync
+            returnPoints = false;
 		}
-		
+
+        if (!player.level().isClientSide() && returnPoints) {
+            int allocatedPoints = 0;
+
+            for (Map<Skill, TopDownTreeNode> pageNodes : this.nodes.values()) {
+                for (TopDownTreeNode node : pageNodes.values()) {
+                    if (!node.isImported() && node.nodeState() == NodeState.UNLOCKED) {
+                        allocatedPoints += node.nodeInfo().requiredAbilityPoints();
+                    }
+                }
+            }
+
+            if (allocatedPoints > 0) {
+                AbilityPoints abilityPoints = AbilityPoints.getAbilityPoints(player).orElse(null);
+
+                if (abilityPoints != null) {
+                    abilityPoints.setAbilityPoints(abilityPoints.getAbilityPoints() + allocatedPoints);
+                    abilityPoints.markDirty();
+                }
+            }
+        }
+
 		this.treeStates.clear();
 		this.nodes.clear();
 		this.rootNodes.clear();

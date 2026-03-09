@@ -61,7 +61,7 @@ public abstract class GameEvents {
 		if (event.getPlayer() == null) {
 			for (ServerPlayer serverPlayer : event.getPlayerList().getPlayers()) {
 				serverPlayer.getExistingData(EpicSkillsAttachmentTypes.SKILL_TREE_PROGRESSION).ifPresent(skillTreeProgression -> {
-					skillTreeProgression.reload(true);
+					skillTreeProgression.reload(true, false);
 					EpicFightNetworkManager.sendToPlayer(new ClientBoundReloadSkillTree(true), serverPlayer);
 				});
 			}
