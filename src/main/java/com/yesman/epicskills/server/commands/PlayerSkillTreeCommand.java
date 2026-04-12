@@ -238,9 +238,17 @@ public class PlayerSkillTreeCommand {
 		
 		switch (action) {
 		case RESET -> {
-			for (ServerPlayer player : players) {
-				if (resetTree(player, returnsAP)) {
-					done++;
+			if (returnsAP) {
+				for (ServerPlayer player : players) {
+					if (deallocateAbilityPoints(player)) {
+						done++;
+					}
+				}
+			} else {
+				for (ServerPlayer player : players) {
+					if (resetTree(player)) {
+						done++;
+					}
 				}
 			}
 		}
@@ -309,10 +317,18 @@ public class PlayerSkillTreeCommand {
 		return done;
 	}
 	
-	private static boolean resetTree(ServerPlayer player, boolean returnsAP) {
+	private static boolean resetTree(ServerPlayer player) {
 		player.getCapability(SkillTreeProgression.SKILL_TREE_PROGRESSION).ifPresent(skillTreeProgression -> {
-			skillTreeProgression.reload(false, returnsAP);
+			skillTreeProgression.reload(false);
 			NetworkManager.sendToPlayer(new ClientBoundReloadSkillTree(false), player);
+		});
+		
+		return player.getCapability(SkillTreeProgression.SKILL_TREE_PROGRESSION).isPresent();
+	}
+	
+	private static boolean deallocateAbilityPoints(ServerPlayer player) {
+		player.getCapability(SkillTreeProgression.SKILL_TREE_PROGRESSION).ifPresent(skillTreeProgression -> {
+			skillTreeProgression.deallocateAbilityPoints(true);
 		});
 		
 		return player.getCapability(SkillTreeProgression.SKILL_TREE_PROGRESSION).isPresent();
@@ -324,8 +340,7 @@ public class PlayerSkillTreeCommand {
 		player.getCapability(SkillTreeProgression.SKILL_TREE_PROGRESSION).ifPresent(skillTreeProgression -> {
 			player.getCapability(AbilityPoints.ABILITY_POINTS).ifPresent(abilityPoints -> {
 				if (force || skillTreeProgression.canUnlockNode(skillTree, skill, abilityPoints, false)) {
-					skillTreeProgression.unlockNode(skillTree, skill);
-					NetworkManager.sendToPlayer(new ClientBoundUnlockNode(skillTree.key(), skill, NodeState.UNLOCKED, false, false, false, false), player);
+					skillTreeProgression.unlockNode(skillTree.key(), skill, player);
 					succeess.set(true);
 				}
 			});

@@ -1,13 +1,17 @@
 package com.yesman.epicskills.client.gui.screen;
 
+import java.util.Set;
+
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.yesman.epicskills.EpicSkills;
 import com.yesman.epicskills.network.NetworkManager;
+import com.yesman.epicskills.network.client.ClientBoundUnlockAchievedNode;
 import com.yesman.epicskills.network.client.ClientBoundUnlockNode;
 import com.yesman.epicskills.network.server.ServerBoundUnlockSkillRequest;
 import com.yesman.epicskills.skilltree.SkillTree;
 import com.yesman.epicskills.world.capability.AbilityPoints;
 import com.yesman.epicskills.world.capability.SkillTreeProgression;
+
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
@@ -27,8 +31,6 @@ import yesman.epicfight.network.EpicFightNetworkManager;
 import yesman.epicfight.network.client.CPChangeSkill;
 import yesman.epicfight.skill.SkillContainer;
 import yesman.epicfight.world.gamerule.EpicFightGameRules;
-
-import java.util.Set;
 
 @OnlyIn(Dist.CLIENT)
 public class SkillInfoScreen extends SkillBookScreen {
@@ -154,6 +156,55 @@ public class SkillInfoScreen extends SkillBookScreen {
 	}
 	
 	public void onSyncPacketArrived(ClientBoundUnlockNode feedbackPacket) {
+		if (feedbackPacket.closeScreen()) {
+			if (feedbackPacket.askChange() && this.playerpatch.getSkillContainerFor(feedbackPacket.skill()).isEmpty()) {
+				var containers = this.playerpatch.getSkillCapability().getSkillContainersFor(feedbackPacket.skill().getCategory());
+				int shortestCooldown = EpicFightGameRules.SKILL_REPLACE_COOLDOWN.getRuleValue(this.playerpatch.getOriginal().level());
+				
+				for (SkillContainer skillContainer : containers) {
+					if (shortestCooldown > skillContainer.getReplaceCooldown()) shortestCooldown = skillContainer.getReplaceCooldown();
+				}
+				
+				if (shortestCooldown == 0 || this.playerpatch.getOriginal().isCreative()) {
+					this.minecraft.setScreen(
+						new MessageScreen<> (
+							"",
+							containers.size() > 1 ? 
+								Component.translatable(
+									EpicSkills.format("gui.%s.messages.change_skill_multiple"),
+									Component.translatable(feedbackPacket.skill().getTranslationKey()).getString()
+								) :
+								Component.translatable(
+									EpicSkills.format("gui.%s.messages.change_skill_one"),
+									Component.translatable(containers.iterator().next().getSkill().getTranslationKey()).getString(),
+									Component.translatable(feedbackPacket.skill().getTranslationKey()).getString()
+								),
+							this,
+							button -> {
+								if (containers.size() > 1) {
+									SlotSelectScreen slotSelectScreen = new SlotSelectScreen(containers, this);
+									this.minecraft.setScreen(slotSelectScreen);
+								} else {
+									this.acquireSkillTo(containers.iterator().next());
+								}
+							},
+							button -> {
+								this.minecraft.setScreen(this.parentScreen);
+							},
+							180,
+							0
+						).setLayerFarPlane(2000).autoCalculateHeight()
+					);
+					
+					return;
+				}
+			}
+			
+			this.minecraft.setScreen(this.parentScreen);
+		}
+	}
+	
+	public void onSyncPacketArrived(ClientBoundUnlockAchievedNode feedbackPacket) {
 		if (feedbackPacket.closeScreen()) {
 			if (feedbackPacket.askChange() && this.playerpatch.getSkillContainerFor(feedbackPacket.skill()).isEmpty()) {
 				var containers = this.playerpatch.getSkillCapability().getSkillContainersFor(feedbackPacket.skill().getCategory());
