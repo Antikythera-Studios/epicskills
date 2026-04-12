@@ -801,8 +801,8 @@ public class SkillTreeScreen extends Screen implements BackgroundRenderableScree
 					buttonTexture.b / 255.0F,
 					1.0F
 				);
-				
-				if (buttonTexture == ButtonStateTexture.LOCKED && !this.treeNode.nodeInfo().noUnlockConditions()) {
+
+                if (buttonTexture == ButtonStateTexture.LOCKED && (!this.treeNode.nodeInfo().noUnlockConditions() && !playerSkillTreeProgression.getAchievedNodes(TreePage.this.skillTree).containsKey(this.treeNode.nodeInfo().skill()))) {
 					guiGraphics.innerBlit(
                         LOCKER_ICON,
 						this.getX() - widthHalf,

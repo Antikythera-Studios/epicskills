@@ -15,6 +15,7 @@ import com.yesman.epicskills.client.gui.components.toasts.SkillTreeNodeToast;
 import com.yesman.epicskills.client.gui.components.toasts.SkillTreeToast;
 import com.yesman.epicskills.client.gui.screen.SkillInfoScreen;
 import com.yesman.epicskills.network.client.ClientBoundSetTreeState;
+import com.yesman.epicskills.network.client.ClientBoundUnlockAchievedNode;
 import com.yesman.epicskills.network.client.ClientBoundUnlockNode;
 import com.yesman.epicskills.skilltree.SkillTree;
 import com.yesman.epicskills.skilltree.SkillTreeEntry;
@@ -29,6 +30,7 @@ import net.minecraft.core.Registry;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
@@ -53,7 +55,11 @@ public class SkillTreeProgression {
 	private final Map<Holder.Reference<SkillTree>, Map<Skill, TopDownTreeNode>> nodes = new HashMap<> ();
 	private final Map<Holder.Reference<SkillTree>, Map<Skill, TopDownTreeNode>> rootNodes = new HashMap<> ();
 	private final List<Pair<Holder.Reference<SkillTree>, TopDownTreeNode>> unlockAwaitingNodes = new LinkedList<> ();
-	private final Player player;
+
+    /// Nodes that custom conditions are unlocked
+    private final Map<Holder.Reference<SkillTree>, Map<Skill, TopDownTreeNode>> achievedNodes = new HashMap<> ();
+
+    private final Player player;
 	
 	public SkillTreeProgression(IAttachmentHolder attachmentHolder) {
 		if (attachmentHolder instanceof Player player) {
@@ -63,45 +69,18 @@ public class SkillTreeProgression {
 			throw new IllegalArgumentException(attachmentHolder + " is not a subtype of Player");
 		}
 		
-		this.reload(false, false);
+		this.reload(false);
 	}
 
-    public void reload(boolean readOldData) {
-        reload(readOldData, false);
-    }
-
     /// @param readOldData  Reload all skills after resetting the skill tree. Used by syncing datapack registry changes.
-    /// @param returnPoints Returns the ability points allocated so far
-	public void reload(boolean readOldData, boolean returnPoints) {
+	public void reload(boolean readOldData) {
 		CompoundTag compound = null;
 		
 		if (readOldData) {
 			compound = new CompoundTag();
 			this.serializeTo(compound);
-
-            // points shouldn't be returned if this reload is by registry sync
-            returnPoints = false;
-		}
-
-        if (!player.level().isClientSide() && returnPoints) {
-            int allocatedPoints = 0;
-
-            for (Map<Skill, TopDownTreeNode> pageNodes : this.nodes.values()) {
-                for (TopDownTreeNode node : pageNodes.values()) {
-                    if (!node.isImported() && node.nodeState() == NodeState.UNLOCKED) {
-                        allocatedPoints += node.nodeInfo().requiredAbilityPoints();
-                    }
-                }
-            }
-
-            if (allocatedPoints > 0) {
-                AbilityPoints abilityPoints = AbilityPoints.getAbilityPoints(player).orElse(null);
-
-                if (abilityPoints != null) {
-                    abilityPoints.setAbilityPoints(abilityPoints.getAbilityPoints() + allocatedPoints);
-                    abilityPoints.markDirty();
-                }
-            }
+		} else {
+            this.achievedNodes.clear();
         }
 
 		this.treeStates.clear();
@@ -115,6 +94,7 @@ public class SkillTreeProgression {
 			this.treeStates.put(skillTree, skillTree.value().locked() ? TreeState.LOCKED : TreeState.UNLOCKED);
 			this.nodes.put(skillTree, new LinkedHashMap<> ());
 			this.rootNodes.put(skillTree, new HashMap<> ());
+            this.achievedNodes.putIfAbsent(skillTree, new HashMap<>());
 		});
 		
 		List<ImportedNode> importedNodes = new ArrayList<> ();
@@ -169,9 +149,9 @@ public class SkillTreeProgression {
 							}
 						});
 					} else {
-						if (node.nodeInfo.noUnlockConditions()) {
-							node.setNodeState(NodeState.UNLOCKABLE, false, false);
-						}
+                        if (node.nodeInfo.noUnlockConditions() || this.achievedNodes.get(skillTree).containsKey(node.nodeInfo.skill())) {
+                            node.setNodeState(NodeState.UNLOCKABLE, false, false);
+                        }
 						
 						this.rootNodes.get(skillTree).put(treeNode.skill(), node);
 					}
@@ -205,8 +185,31 @@ public class SkillTreeProgression {
 			this.deserializeFrom(compound);
 		}
 	}
-	
-	public void tick() {
+
+    /// Make all nodes locked (exclude conditional lock) and return all ability points
+    public void deallocateAbilityPoints(boolean unequipSkills) {
+        int allocatedPoints = 0;
+
+        for (Map<Skill, TopDownTreeNode> pageNodes : this.nodes.values()) {
+            for (TopDownTreeNode node : pageNodes.values()) {
+                if (!node.isImported() && node.nodeState() == NodeState.UNLOCKED) {
+                    allocatedPoints += node.nodeInfo().requiredAbilityPoints();
+                    node.setNodeState(NodeState.LOCKED, false, unequipSkills);
+                }
+            }
+        }
+
+        if (allocatedPoints > 0) {
+            AbilityPoints abilityPoints = AbilityPoints.getAbilityPoints(player).orElse(null);
+
+            if (abilityPoints != null) {
+                abilityPoints.setAbilityPoints(abilityPoints.getAbilityPoints() + allocatedPoints);
+            }
+        }
+    }
+
+
+    public void tick() {
 		if (this.player.level().isClientSide()) {
 			return;
 		}
@@ -223,15 +226,16 @@ public class SkillTreeProgression {
 				}
 			}
 		});
-		
+
 		this.unlockAwaitingNodes.removeIf(pair -> {
 			boolean meets = pair.getSecond().nodeInfo().unlockCondition().matches(serverplayer, serverplayer);
-			
-			if (meets) {
-				pair.getSecond().setNodeState(NodeState.UNLOCKABLE, true, false);
-				payloadsbuilder.and(new ClientBoundUnlockNode(pair.getFirst().key(), pair.getSecond().nodeInfo().skill().holder(), NodeState.UNLOCKABLE, true, false, false, false));
-			}
-			
+
+            if (meets) {
+                this.achievedNodes.get(pair.getFirst()).put(pair.getSecond().nodeInfo().skill(), pair.getSecond());
+                pair.getSecond().setNodeState(NodeState.UNLOCKABLE, true, false);
+				payloadsbuilder.and(new ClientBoundUnlockAchievedNode(pair.getFirst().key(), pair.getSecond().nodeInfo().skill().holder(), NodeState.UNLOCKABLE, true, false, false, false));
+            }
+
 			return meets;
 		});
 		
@@ -335,6 +339,10 @@ public class SkillTreeProgression {
 		Map<Skill, TopDownTreeNode> nodes = this.nodes.get(skillTree);
 		TopDownTreeNode node =  nodes.get(skill);
 		node.setNodeState(NodeState.UNLOCKED, true, false);
+
+        if (!node.nodeInfo().noUnlockConditions()) {
+            this.achievedNodes.get(skillTree).put(skill, node);
+        }
 	}
 	
 	public boolean canLockNode(ResourceLocation id, Skill skill) {
@@ -382,7 +390,28 @@ public class SkillTreeProgression {
 		TopDownTreeNode node =  nodes.get(skill);
 		node.setNodeState(NodeState.LOCKED, true, unequip);
 	}
-	
+
+    @OnlyIn(Dist.CLIENT)
+    public void processSyncPacket(ClientBoundUnlockAchievedNode packet) {
+        Registry<SkillTree> registry = this.registryAccess.registryOrThrow(SkillTree.SKILL_TREE_REGISTRY_KEY);
+        Holder.Reference<SkillTree> skillTree = registry.getHolderOrThrow(packet.skillTree());
+        Map<Skill, TopDownTreeNode> nodes = this.nodes.get(skillTree);
+        TopDownTreeNode node =  nodes.get(packet.skill().value());
+
+        node.setNodeState(packet.nodeState(), true, packet.unequip());
+
+        if (packet.nodeState() == NodeState.UNLOCKED && packet.unlockAlarm()) {
+            Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 1.0F));
+            Minecraft.getInstance().getToasts().addToast(new SkillTreeNodeToast(packet.skill()));
+        }
+
+        if (Minecraft.getInstance().screen instanceof SkillInfoScreen skillInfoScreen) {
+            skillInfoScreen.onSyncPacketArrived(packet);
+        }
+
+        this.achievedNodes.get(skillTree).put(packet.skill().value(), node);
+    }
+
 	@OnlyIn(Dist.CLIENT)
 	public void processSyncPacket(ClientBoundSetTreeState packet) {
 		Registry<SkillTree> registry = this.registryAccess.registryOrThrow(SkillTree.SKILL_TREE_REGISTRY_KEY);
@@ -436,7 +465,11 @@ public class SkillTreeProgression {
 	public Map<Skill, TopDownTreeNode> getNodes(Holder<SkillTree> skillTree) {
 		return this.nodes.get(skillTree);
 	}
-	
+
+    public Map<Skill, TopDownTreeNode> getAchievedNodes(Holder<SkillTree> skillTree) {
+        return this.achievedNodes.get(skillTree);
+    }
+
 	public abstract class TopDownTreeNode {
 		protected final Holder.Reference<SkillTree> belongedSkillTree;
 		protected final List<TopDownTreeNode> parent = new ArrayList<> ();
@@ -503,13 +536,13 @@ public class SkillTreeProgression {
 						parentAllUnlocked &= parentNode.nodeState() == NodeState.UNLOCKED;
 					}
 				}
-				
+
 				if (parentAllUnlocked) {
-					if (this.nodeInfo().noUnlockConditions()) {
+                    if (this.nodeInfo().noUnlockConditions() || SkillTreeProgression.this.achievedNodes.get(this.belongedSkillTree).containsKey(this.nodeInfo.skill())) {
 						this.nodeState = NodeState.UNLOCKABLE;
 					} else {
 						this.nodeState = NodeState.LOCKED;
-						SkillTreeProgression.this.unlockAwaitingNodes.add(Pair.of(this.belongedSkillTree, this));
+						if (!this.nodeInfo().hasCustomUnlockCondition()) SkillTreeProgression.this.unlockAwaitingNodes.add(Pair.of(this.belongedSkillTree, this));
 					}
 				} else {
 					this.nodeState = NodeState.LOCKED;
@@ -539,11 +572,11 @@ public class SkillTreeProgression {
 						}
 						
 						if (parentAllUnlocked) {
-							if (childNode.nodeInfo().noUnlockConditions()) {
+                            if (childNode.nodeInfo().noUnlockConditions() || SkillTreeProgression.this.achievedNodes.get(childNode.belongedSkillTree).containsKey(childNode.nodeInfo.skill())) {
 								childNode.setNodeState(NodeState.UNLOCKABLE, true, modifyEquip);
 							} else {
 								childNode.setNodeState(NodeState.LOCKED, true, modifyEquip);
-								SkillTreeProgression.this.unlockAwaitingNodes.add(Pair.of(childNode.belongedSkillTree, childNode));
+                                if (!this.nodeInfo().hasCustomUnlockCondition()) SkillTreeProgression.this.unlockAwaitingNodes.add(Pair.of(childNode.belongedSkillTree, childNode));
 							}
 						} else {
 							childNode.setNodeState(NodeState.LOCKED, true, modifyEquip);
@@ -559,12 +592,15 @@ public class SkillTreeProgression {
 								parentAllUnlocked &= parentNode.nodeState() == NodeState.UNLOCKED;
 							}
 						}
-						
-						if (parentAllUnlocked) {
-							if (childNode.nodeInfo.noUnlockConditions()) {
+
+                        if (parentAllUnlocked) {
+
+                            System.out.println(SkillTreeProgression.this.achievedNodes.get(childNode.belongedSkillTree));
+
+							if (childNode.nodeInfo.noUnlockConditions() || SkillTreeProgression.this.achievedNodes.get(childNode.belongedSkillTree).containsKey(childNode.nodeInfo.skill())) {
 								childNode.setNodeState(NodeState.UNLOCKABLE, true, modifyEquip);
 							} else if (!childNode.nodeInfo.hasCustomUnlockCondition()) {
-								SkillTreeProgression.this.unlockAwaitingNodes.add(Pair.of(childNode.belongedSkillTree, childNode));
+                                if (!this.nodeInfo().hasCustomUnlockCondition()) SkillTreeProgression.this.unlockAwaitingNodes.add(Pair.of(childNode.belongedSkillTree, childNode));
 							}
 						}
 					});
@@ -720,6 +756,17 @@ public class SkillTreeProgression {
 			});
 			
 			treeCompound.put("nodes", children);
+            ListTag achievedNodes = new ListTag();
+
+            if (!this.achievedNodes.get(entry.getKey()).isEmpty()) {
+                for (TopDownTreeNode node : this.achievedNodes.get(entry.getKey()).values()) {
+                    achievedNodes.add(StringTag.valueOf(node.nodeInfo().skill().getRegistryName().toString()));
+                }
+            }
+
+            if (!achievedNodes.isEmpty()) {
+                treeCompound.put("achieved", achievedNodes);
+            }
 		}
 	}
 	
@@ -762,6 +809,17 @@ public class SkillTreeProgression {
 					}
 				});
 			}
+
+            if (treeCompound.contains("achieved", Tag.TAG_LIST)) {
+                ListTag listTag = treeCompound.getList("achieved", Tag.TAG_STRING);
+
+                for (Tag tag : listTag) {
+                    Skill skill = EpicFightRegistries.SKILL.get(ResourceLocation.parse(tag.getAsString()));
+
+                    Map<Skill, TopDownTreeNode> achievedNodes = this.achievedNodes.get(skilltree);
+                    achievedNodes.put(skill, this.nodes.get(skilltree).get(skill));
+                }
+            }
 		}
 	}
 }

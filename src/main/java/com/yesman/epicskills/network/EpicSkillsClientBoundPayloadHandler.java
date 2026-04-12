@@ -1,11 +1,7 @@
 package com.yesman.epicskills.network;
 
 import com.yesman.epicskills.client.gui.screen.SkillTreeScreen;
-import com.yesman.epicskills.network.client.ClientBoundReloadSkillTree;
-import com.yesman.epicskills.network.client.ClientBoundSetAbilityPoints;
-import com.yesman.epicskills.network.client.ClientBoundSetTreeState;
-import com.yesman.epicskills.network.client.ClientBoundSyncTreeState;
-import com.yesman.epicskills.network.client.ClientBoundUnlockNode;
+import com.yesman.epicskills.network.client.*;
 import com.yesman.epicskills.registry.entry.EpicSkillsAttachmentTypes;
 
 import net.minecraft.client.Minecraft;
@@ -15,7 +11,7 @@ public interface EpicSkillsClientBoundPayloadHandler {
 	public static void handleReloadSkillTree(final ClientBoundReloadSkillTree data, final IPayloadContext context) {
 		context.player().getExistingData(EpicSkillsAttachmentTypes.SKILL_TREE_PROGRESSION).ifPresent(skillTreeProgression -> {
             // Ability points are always returned in server side. No need to care about sync returnAP parameter.
-            skillTreeProgression.reload(data.readOldData(), false);
+            skillTreeProgression.reload(data.readOldData());
 		});
 	}
 	
@@ -48,4 +44,16 @@ public interface EpicSkillsClientBoundPayloadHandler {
 			skilltreeProgression.processSyncPacket(data);
 		});
 	}
+
+    public static void handleDeallocateAbilityPoints(final ClientBoundDeallocateAbilityPoints data, final IPayloadContext context) {
+        context.player().getExistingData(EpicSkillsAttachmentTypes.SKILL_TREE_PROGRESSION).ifPresent(skilltreeProgression -> {
+            skilltreeProgression.deallocateAbilityPoints(data.unequipSkills());
+        });
+    }
+
+    public static void handleUnlockAchievedNode(final ClientBoundUnlockAchievedNode data, final IPayloadContext context) {
+        context.player().getExistingData(EpicSkillsAttachmentTypes.SKILL_TREE_PROGRESSION).ifPresent(skilltreeProgression -> {
+            skilltreeProgression.processSyncPacket(data);
+        });
+    }
 }

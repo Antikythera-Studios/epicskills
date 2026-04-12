@@ -4,6 +4,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.yesman.epicskills.EpicSkills;
 import com.yesman.epicskills.neoforge.attachment.AbilityPoints;
 import com.yesman.epicskills.neoforge.attachment.SkillTreeProgression;
+import com.yesman.epicskills.network.client.ClientBoundUnlockAchievedNode;
 import com.yesman.epicskills.network.client.ClientBoundUnlockNode;
 import com.yesman.epicskills.network.server.ServerBoundUnlockSkillRequest;
 import com.yesman.epicskills.registry.entry.EpicSkillsAttachmentTypes;
@@ -202,7 +203,56 @@ public class SkillInfoScreen extends SkillBookScreen {
 			this.minecraft.setScreen(this.parentScreen);
 		}
 	}
-	
+
+    public void onSyncPacketArrived(ClientBoundUnlockAchievedNode feedbackPacket) {
+        if (feedbackPacket.closeScreen()) {
+            if (feedbackPacket.askChange() && this.playerpatch.getSkillContainerFor(feedbackPacket.skill().value()).isEmpty()) {
+                var containers = this.playerpatch.getPlayerSkills().getSkillContainersFor(feedbackPacket.skill().value().getCategory());
+                int shortestCooldown = EpicFightGameRules.SKILL_REPLACE_COOLDOWN.getRuleValue(this.playerpatch.getOriginal().level());
+
+                for (SkillContainer skillContainer : containers) {
+                    if (shortestCooldown > skillContainer.getReplaceCooldown()) shortestCooldown = skillContainer.getReplaceCooldown();
+                }
+
+                if (shortestCooldown == 0 || this.playerpatch.getOriginal().isCreative()) {
+                    this.minecraft.setScreen(
+                        new MessageScreen<> (
+                            "",
+                            containers.size() > 1 ?
+                                Component.translatable(
+                                    EpicSkills.format("gui.%s.messages.change_skill_multiple"),
+                                    Component.translatable(feedbackPacket.skill().value().getTranslationKey()).getString()
+                                ) :
+                                Component.translatable(
+                                    EpicSkills.format("gui.%s.messages.change_skill_one"),
+                                    Component.translatable(containers.iterator().next().getSkill().getTranslationKey()).getString(),
+                                    Component.translatable(feedbackPacket.skill().value().getTranslationKey()).getString()
+                                ),
+                            this,
+                            button -> {
+                                if (containers.size() > 1) {
+                                    SlotSelectScreen slotSelectScreen = new SlotSelectScreen(containers, this);
+                                    this.minecraft.setScreen(slotSelectScreen);
+                                } else {
+                                    this.acquireSkillTo(containers.iterator().next());
+                                }
+                            },
+                            button -> {
+                                this.minecraft.setScreen(this.parentScreen);
+                            },
+                            180,
+                            0
+                        ).setLayerFarPlane(2000).autoCalculateHeight()
+                    );
+
+                    return;
+                }
+            }
+
+            this.minecraft.setScreen(this.parentScreen);
+        }
+    }
+
 	@Override
 	protected boolean consumesItem() {
 		return false;

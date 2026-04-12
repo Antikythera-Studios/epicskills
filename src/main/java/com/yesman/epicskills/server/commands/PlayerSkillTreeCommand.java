@@ -3,6 +3,10 @@ package com.yesman.epicskills.server.commands;
 import java.util.Collection;
 import java.util.function.Supplier;
 
+import com.yesman.epicskills.neoforge.attachment.SkillTreeProgression;
+import com.yesman.epicskills.network.NetworkManager;
+import com.yesman.epicskills.network.client.ClientBoundDeallocateAbilityPoints;
+import com.yesman.epicskills.network.client.ClientBoundUnlockAchievedNode;
 import org.jetbrains.annotations.Nullable;
 
 import com.google.common.collect.ImmutableList;
@@ -246,11 +250,19 @@ public class PlayerSkillTreeCommand {
 		
 		switch (action) {
 		case RESET -> {
-			for (ServerPlayer player : players) {
-				if (resetTree(player, returnPoints)) {
-					done++;
-				}
-			}
+            if (returnPoints) {
+                for (ServerPlayer player : players) {
+                    if (deallocateAbilityPoints(player)) {
+                        done++;
+                    }
+                }
+            } else {
+                for (ServerPlayer player : players) {
+                    if (resetTree(player)) {
+                        done++;
+                    }
+                }
+            }
 		}
 		case UNLOCK -> {
 			for (ServerPlayer player : players) {
@@ -317,23 +329,39 @@ public class PlayerSkillTreeCommand {
 		return done;
 	}
 	
-	private static boolean resetTree(ServerPlayer player, boolean returnPoints) {
+	private static boolean resetTree(ServerPlayer player) {
 		player.getExistingData(EpicSkillsAttachmentTypes.SKILL_TREE_PROGRESSION).ifPresent(skillTreeProgression -> {
-			skillTreeProgression.reload(false, returnPoints);
+			skillTreeProgression.reload(false);
 			EpicFightNetworkManager.sendToPlayer(new ClientBoundReloadSkillTree(false), player);
 		});
 		
 		return player.getExistingData(EpicSkillsAttachmentTypes.SKILL_TREE_PROGRESSION).isPresent();
 	}
-	
-	private static boolean unlockTreeNode(ServerPlayer player, Holder.Reference<SkillTree> skillTree, Holder<Skill> skill, boolean force) {
+
+    private static boolean deallocateAbilityPoints(ServerPlayer player) {
+        player.getExistingData(EpicSkillsAttachmentTypes.SKILL_TREE_PROGRESSION).ifPresent(skillTreeProgression -> {
+            skillTreeProgression.deallocateAbilityPoints(true);
+            EpicFightNetworkManager.sendToPlayer(new ClientBoundDeallocateAbilityPoints(true), player);
+        });
+
+        return player.getExistingData(EpicSkillsAttachmentTypes.SKILL_TREE_PROGRESSION).isPresent();
+    }
+
+    private static boolean unlockTreeNode(ServerPlayer player, Holder.Reference<SkillTree> skillTree, Holder<Skill> skill, boolean force) {
 		MutableBoolean succeess = new MutableBoolean(false);
 		
 		player.getExistingData(EpicSkillsAttachmentTypes.SKILL_TREE_PROGRESSION).ifPresent(skillTreeProgression -> {
 			player.getExistingData(EpicSkillsAttachmentTypes.ABILITY_POINTS).ifPresent(abilityPoints -> {
 				if (force || skillTreeProgression.canUnlockNode(skillTree, skill.value(), abilityPoints, false)) {
 					skillTreeProgression.unlockNode(skillTree, skill.value());
-					EpicFightNetworkManager.sendToPlayer(new ClientBoundUnlockNode(skillTree.key(), skill, NodeState.UNLOCKED, false, false, false, false), player);
+                    SkillTreeProgression.TopDownTreeNode treeNode = skillTreeProgression.getNodes(skillTree).get(skill.value());
+
+                    if (treeNode.nodeInfo().noUnlockConditions()) {
+					    EpicFightNetworkManager.sendToPlayer(new ClientBoundUnlockNode(skillTree.key(), skill, NodeState.UNLOCKED, false, false, false, false), player);
+                    } else {
+					    EpicFightNetworkManager.sendToPlayer(new ClientBoundUnlockAchievedNode(skillTree.key(), skill, NodeState.UNLOCKED, false, false, false, false), player);
+                    }
+
 					succeess.set(true);
 				}
 			});

@@ -1,11 +1,7 @@
 package com.yesman.epicskills.network;
 
 import com.yesman.epicskills.EpicSkills;
-import com.yesman.epicskills.network.client.ClientBoundReloadSkillTree;
-import com.yesman.epicskills.network.client.ClientBoundSetAbilityPoints;
-import com.yesman.epicskills.network.client.ClientBoundSetTreeState;
-import com.yesman.epicskills.network.client.ClientBoundSyncTreeState;
-import com.yesman.epicskills.network.client.ClientBoundUnlockNode;
+import com.yesman.epicskills.network.client.*;
 import com.yesman.epicskills.network.server.ServerBoundConvertAbilityPointRequest;
 import com.yesman.epicskills.network.server.ServerBoundUnlockSkillRequest;
 
@@ -26,7 +22,9 @@ public class NetworkManager {
 	public static final CustomPacketPayload.Type<ClientBoundSyncTreeState> CLIENT_BOUND_SYNC_TREE_STATE = ManagedCustomPacketPayload.registerPayloadType(ClientBoundSyncTreeState.class, EpicSkills.MODID, "client_bound_sync_tree_state");
 	public static final CustomPacketPayload.Type<ClientBoundUnlockNode> CLIENT_BOUND_UNLOCK_NODE = ManagedCustomPacketPayload.registerPayloadType(ClientBoundUnlockNode.class, EpicSkills.MODID, "client_bound_reload_unlock_node");
 	public static final CustomPacketPayload.Type<ClientBoundSetTreeState> CLIENT_BOUND_UNLOCK_TREE = ManagedCustomPacketPayload.registerPayloadType(ClientBoundSetTreeState.class, EpicSkills.MODID, "client_bound_reload_unlock_tree");
-	
+	public static final CustomPacketPayload.Type<ClientBoundDeallocateAbilityPoints> CLIENT_BOUND_DEALLOCATE_ABILITY_POINTS = ManagedCustomPacketPayload.registerPayloadType(ClientBoundDeallocateAbilityPoints.class, EpicSkills.MODID, "client_bound_deallocate_ability_points");
+	public static final CustomPacketPayload.Type<ClientBoundUnlockAchievedNode> CLIENT_BOUND_UNLOCK_ACHIEVED_NODE = ManagedCustomPacketPayload.registerPayloadType(ClientBoundUnlockAchievedNode.class, EpicSkills.MODID, "client_bound_unlock_achieved_node");
+
 	// Server bound payloads
 	public static final CustomPacketPayload.Type<ServerBoundConvertAbilityPointRequest> SERVER_BOUND_CONVERT_ABILITY_POINT_REQUEST = ManagedCustomPacketPayload.registerPayloadType(ServerBoundConvertAbilityPointRequest.class, EpicSkills.MODID, "server_bound_animator_control");
 	public static final CustomPacketPayload.Type<ServerBoundUnlockSkillRequest> SERVER_BOUND_UNLOCK_SKILL_REQUEST = ManagedCustomPacketPayload.registerPayloadType(ServerBoundUnlockSkillRequest.class, EpicSkills.MODID, "server_bound_change_player_mode");
@@ -61,6 +59,16 @@ public class NetworkManager {
 	    		, ClientBoundSetTreeState.STREAM_CODEC
 	    		, EpicSkillsClientBoundPayloadHandler::handleUnlockTree
 	    	)
+            .playToClient(
+                  CLIENT_BOUND_DEALLOCATE_ABILITY_POINTS
+                , ClientBoundDeallocateAbilityPoints.STREAM_CODEC
+                , EpicSkillsClientBoundPayloadHandler::handleDeallocateAbilityPoints
+            )
+            .playToClient(
+                  CLIENT_BOUND_UNLOCK_ACHIEVED_NODE
+                , ClientBoundUnlockAchievedNode.STREAM_CODEC
+                , EpicSkillsClientBoundPayloadHandler::handleUnlockAchievedNode
+            )
 			;
 		
 		registrar

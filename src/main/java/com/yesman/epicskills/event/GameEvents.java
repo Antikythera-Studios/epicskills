@@ -25,7 +25,6 @@ import net.neoforged.neoforge.event.entity.EntityEvent.EntityConstructing;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
-import yesman.epicfight.api.event.types.entity.HandleEntityDataEvent;
 import yesman.epicfight.network.EpicFightNetworkManager;
 import yesman.epicfight.world.gamerule.EpicFightGameRules;
 
@@ -61,7 +60,7 @@ public abstract class GameEvents {
 		if (event.getPlayer() == null) {
 			for (ServerPlayer serverPlayer : event.getPlayerList().getPlayers()) {
 				serverPlayer.getExistingData(EpicSkillsAttachmentTypes.SKILL_TREE_PROGRESSION).ifPresent(skillTreeProgression -> {
-					skillTreeProgression.reload(true, false);
+					skillTreeProgression.reload(true);
 					EpicFightNetworkManager.sendToPlayer(new ClientBoundReloadSkillTree(true), serverPlayer);
 				});
 			}
