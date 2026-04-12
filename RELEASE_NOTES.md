@@ -1,6 +1,12 @@
 # Epic Fight: Skill Tree in Minecraft 1.20.1 Changelog
 # Changelog on publishing websites and Discord will be parsed between version header ([x.x.x] - yyyy-mm-dd) and (For Devs) section
 
+## [20.2.7] - 2026-04-13
+
+### Fixed
+
+- Fixed the skill node and ability point not returned for custom lock skills when reset
+
 ## [20.2.6] - 2026-03-10
 
 - Added an option to skill tree reset command where players will be returned the ability points they've spent so far
