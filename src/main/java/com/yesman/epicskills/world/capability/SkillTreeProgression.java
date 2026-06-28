@@ -76,7 +76,7 @@ public class SkillTreeProgression {
 	private final Map<Holder.Reference<SkillTree>, Map<Skill, TopDownTreeNode>> achievedNodes = new HashMap<> ();
 	
 	private final Player player;
-	
+
 	public SkillTreeProgression(RegistryAccess registryAccess, Player player) {
 		this.registryAccess = registryAccess;
 		this.player = player;
@@ -138,7 +138,7 @@ public class SkillTreeProgression {
 						EpicSkills.LOGGER.warn("Duplicated skill declaration! " + treeNode.skill() + " in " + skillTree.key().location() + ". ignored.");
 						return;
 					}
-					
+
 					TopDownTreeNode node;
 					
 					if (treeNode.importFrom() != null) {
@@ -162,11 +162,14 @@ public class SkillTreeProgression {
 					} else {
 						if (node.nodeInfo.noUnlockConditions() || this.achievedNodes.get(skillTree).containsKey(node.nodeInfo.skill())) {
 							node.setNodeState(NodeState.UNLOCKABLE, false, false);
+						} else {
+							// Register to `unlockAwaitingNodes`.
+							this.unlockAwaitingNodes.add(Pair.of(skillTree, node));
 						}
-						
+
 						this.rootNodes.get(skillTree).put(treeNode.skill(), node);
 					}
-					
+
 					nodesBySkill.put(treeNode.skill(), node);
 				});
 			});
@@ -193,6 +196,8 @@ public class SkillTreeProgression {
 		});
 		
 		if (readOldData) {
+			// clear default await nodes
+			this.unlockAwaitingNodes.clear();
 			this.deserializeFrom(compound);
 		}
 	}
@@ -203,14 +208,24 @@ public class SkillTreeProgression {
 	public void deallocateAbilityPoints(boolean unequipSkills) {
         int allocatedPoints = 0;
 
+		// Gather allocated APs
         for (Map<Skill, TopDownTreeNode> pageNodes : this.nodes.values()) {
             for (TopDownTreeNode node : pageNodes.values()) {
                 if (!node.isImported() && node.nodeState() == NodeState.UNLOCKED) {
                     allocatedPoints += node.nodeInfo().requiredAbilityPoints();
-                    node.setNodeState(NodeState.LOCKED, false, unequipSkills);
                 }
             }
         }
+
+		for (Map<Skill, TopDownTreeNode> pageRootNodes : this.rootNodes.values()) {
+			for (TopDownTreeNode rootNode : pageRootNodes.values()) {
+				// Propagate root node state to child
+				switch (rootNode.nodeState()) {
+					case UNLOCKABLE, UNLOCKED -> rootNode.setNodeState(NodeState.UNLOCKABLE, true, unequipSkills);
+					case LOCKED -> rootNode.setNodeState(NodeState.LOCKED, true, unequipSkills);
+				}
+			}
+		}
 
         if (allocatedPoints > 0) {
             AbilityPoints abilityPoints = AbilityPoints.getAbilityPoints(player).orElse(null);
@@ -240,10 +255,10 @@ public class SkillTreeProgression {
 				}
 			}
 		});
-		
+
 		this.unlockAwaitingNodes.removeIf(pair -> {
 			boolean meets = pair.getSecond().nodeInfo().unlockCondition().matches(serverplayer, serverplayer);
-			
+
 			if (meets) {
 				this.achievedNodes.get(pair.getFirst()).put(pair.getSecond().nodeInfo().skill(), pair.getSecond());
 				pair.getSecond().setNodeState(NodeState.UNLOCKABLE, true, false);
@@ -432,7 +447,19 @@ public class SkillTreeProgression {
 	public Map<Skill, TopDownTreeNode> getAchievedNodes(Holder<SkillTree> skillTree) {
 		return this.achievedNodes.get(skillTree);
 	}
-	
+
+	/**
+	 * Checks whether the given skill node in the tree is waiting to be unlocked. Used in preventing
+	 * duplicated nodes while propagating node states that has led to concurrent modification exception.
+	 */
+	private boolean isPendingToUnlockConditionalNode(Holder.Reference<SkillTree> tree, Skill skill) {
+		for (Pair<Holder.Reference<SkillTree>, TopDownTreeNode> pendingNodeInfo : unlockAwaitingNodes) {
+			if (pendingNodeInfo.getFirst().equals(tree) && pendingNodeInfo.getSecond().nodeInfo.skill() == skill) return true;
+		}
+
+		return false;
+	}
+
 	/**********************************************************************************************************
 	 * State checking methods by ResourceKey
 	 * @param skillTreeId {@link EpicSkillsSkillTrees} or a custom constant class contains skill tree pages' id
@@ -573,10 +600,6 @@ public class SkillTreeProgression {
 				});
 			}
 			
-			if (nodeState == NodeState.UNLOCKABLE || nodeState == NodeState.LOCKED) {
-				
-			}
-			
 			if (nodeState == NodeState.LOCKED) {
 				boolean parentAllUnlocked = true;
 				
@@ -591,7 +614,10 @@ public class SkillTreeProgression {
 						this.nodeState = NodeState.UNLOCKABLE;
 					} else {
 						this.nodeState = NodeState.LOCKED;
-						if (!this.nodeInfo().hasCustomUnlockCondition()) SkillTreeProgression.this.unlockAwaitingNodes.add(Pair.of(this.belongedSkillTree, this));
+
+						if (!this.nodeInfo().hasCustomUnlockCondition() && !isPendingToUnlockConditionalNode(belongedSkillTree, this.nodeInfo().skill())) {
+							SkillTreeProgression.this.unlockAwaitingNodes.add(Pair.of(this.belongedSkillTree, this));
+						}
 					}
 				} else {
 					this.nodeState = NodeState.LOCKED;
@@ -625,7 +651,9 @@ public class SkillTreeProgression {
 								childNode.setNodeState(NodeState.UNLOCKABLE, true, modifyEquip);
 							} else {
 								childNode.setNodeState(NodeState.LOCKED, true, modifyEquip);
-								if (!childNode.nodeInfo().hasCustomUnlockCondition()) SkillTreeProgression.this.unlockAwaitingNodes.add(Pair.of(childNode.belongedSkillTree, childNode));
+								if (!childNode.nodeInfo().hasCustomUnlockCondition() && !isPendingToUnlockConditionalNode(childNode.belongedSkillTree, childNode.nodeInfo().skill())) {
+									SkillTreeProgression.this.unlockAwaitingNodes.add(Pair.of(childNode.belongedSkillTree, childNode));
+								}
 							}
 						} else {
 							childNode.setNodeState(NodeState.LOCKED, true, modifyEquip);
@@ -646,7 +674,9 @@ public class SkillTreeProgression {
 							if (childNode.nodeInfo.noUnlockConditions() || SkillTreeProgression.this.achievedNodes.get(childNode.belongedSkillTree).containsKey(childNode.nodeInfo.skill())) {
 								childNode.setNodeState(NodeState.UNLOCKABLE, true, modifyEquip);
 							} else if (!childNode.nodeInfo.hasCustomUnlockCondition()) {
-								if (!childNode.nodeInfo().hasCustomUnlockCondition()) SkillTreeProgression.this.unlockAwaitingNodes.add(Pair.of(childNode.belongedSkillTree, childNode));
+								if (!childNode.nodeInfo().hasCustomUnlockCondition() && !isPendingToUnlockConditionalNode(childNode.belongedSkillTree, childNode.nodeInfo().skill())) {
+									SkillTreeProgression.this.unlockAwaitingNodes.add(Pair.of(childNode.belongedSkillTree, childNode));
+								}
 							}
 						}
 					});
