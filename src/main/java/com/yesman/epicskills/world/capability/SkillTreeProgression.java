@@ -57,6 +57,7 @@ import net.minecraftforge.common.capabilities.ICapabilityProvider;
 import net.minecraftforge.common.capabilities.ICapabilitySerializable;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
+import reascer.wom.gameasset.WOMSkills;
 import yesman.epicfight.api.data.reloader.SkillManager;
 import yesman.epicfight.api.utils.ParseUtil;
 import yesman.epicfight.skill.Skill;
@@ -194,7 +195,7 @@ public class SkillTreeProgression {
 				importedNodeChild.parents().add(importedOriginalNode);
 			});
 		});
-		
+
 		if (readOldData) {
 			// clear default await nodes
 			this.unlockAwaitingNodes.clear();
@@ -615,7 +616,7 @@ public class SkillTreeProgression {
 					} else {
 						this.nodeState = NodeState.LOCKED;
 
-						if (!this.nodeInfo().hasCustomUnlockCondition() && !isPendingToUnlockConditionalNode(belongedSkillTree, this.nodeInfo().skill())) {
+						if (!this.nodeInfo.hasCustomUnlockCondition() && !isPendingToUnlockConditionalNode(belongedSkillTree, this.nodeInfo().skill()) && !achievedNodes.get(belongedSkillTree).containsKey(this.nodeInfo.skill())) {
 							SkillTreeProgression.this.unlockAwaitingNodes.add(Pair.of(this.belongedSkillTree, this));
 						}
 					}
@@ -651,7 +652,7 @@ public class SkillTreeProgression {
 								childNode.setNodeState(NodeState.UNLOCKABLE, true, modifyEquip);
 							} else {
 								childNode.setNodeState(NodeState.LOCKED, true, modifyEquip);
-								if (!childNode.nodeInfo().hasCustomUnlockCondition() && !isPendingToUnlockConditionalNode(childNode.belongedSkillTree, childNode.nodeInfo().skill())) {
+								if (!this.nodeInfo.hasCustomUnlockCondition() && !isPendingToUnlockConditionalNode(childNode.belongedSkillTree, childNode.nodeInfo().skill()) && !achievedNodes.get(belongedSkillTree).containsKey(childNode.nodeInfo.skill())) {
 									SkillTreeProgression.this.unlockAwaitingNodes.add(Pair.of(childNode.belongedSkillTree, childNode));
 								}
 							}
@@ -669,14 +670,12 @@ public class SkillTreeProgression {
 								parentAllUnlocked &= parentNode.nodeState() == NodeState.UNLOCKED;
 							}
 						}
-						
+
 						if (parentAllUnlocked) {
 							if (childNode.nodeInfo.noUnlockConditions() || SkillTreeProgression.this.achievedNodes.get(childNode.belongedSkillTree).containsKey(childNode.nodeInfo.skill())) {
 								childNode.setNodeState(NodeState.UNLOCKABLE, true, modifyEquip);
-							} else if (!childNode.nodeInfo.hasCustomUnlockCondition()) {
-								if (!childNode.nodeInfo().hasCustomUnlockCondition() && !isPendingToUnlockConditionalNode(childNode.belongedSkillTree, childNode.nodeInfo().skill())) {
-									SkillTreeProgression.this.unlockAwaitingNodes.add(Pair.of(childNode.belongedSkillTree, childNode));
-								}
+							} else if (!this.nodeInfo.hasCustomUnlockCondition() && !isPendingToUnlockConditionalNode(childNode.belongedSkillTree, childNode.nodeInfo().skill()) && !achievedNodes.get(belongedSkillTree).containsKey(childNode.nodeInfo.skill())) {
+								SkillTreeProgression.this.unlockAwaitingNodes.add(Pair.of(childNode.belongedSkillTree, childNode));
 							}
 						}
 					});
@@ -777,17 +776,17 @@ public class SkillTreeProgression {
 			return;
 		}
 		
-		NodeState treeState;
+		NodeState nodeState;
 		
 		try {
-			treeState = NodeState.valueOf(ParseUtil.toUpperCase(nodeCompound.getString("state")));
+			nodeState = NodeState.valueOf(ParseUtil.toUpperCase(nodeCompound.getString("state")));
 		} catch (IllegalArgumentException e) {
 			return;
 		}
+
+		node.setNodeState(nodeState, false, false);
 		
-		node.setNodeState(treeState, false, false);
-		
-		if (treeState == NodeState.LOCKED) {
+		if (nodeState == NodeState.LOCKED) {
 			boolean parentAllUnlocked = true;
 			
 			if (!node.parents().isEmpty()) {
@@ -796,11 +795,11 @@ public class SkillTreeProgression {
 				}
 			}
 			
-			if (parentAllUnlocked && node.nodeInfo().unlockCondition() != null && !node.nodeInfo().hasCustomUnlockCondition()) {
+			if (parentAllUnlocked && node.nodeInfo().unlockCondition() != null && !node.nodeInfo().noUnlockConditions() && !this.achievedNodes.get(skilltree).containsKey(node.nodeInfo.skill())) {
 				this.unlockAwaitingNodes.add(Pair.of(node.belongedSkillTree, node));
 			}
 		}
-		
+
 		ListTag children = nodeCompound.getList("children", Tag.TAG_COMPOUND);
 		
 		if (!node.children().isEmpty() && !children.isEmpty()) {
@@ -847,6 +846,8 @@ public class SkillTreeProgression {
 	}
 	
 	public void deserializeFrom(CompoundTag compound) {
+		// Clear since will be re-estimated
+		unlockAwaitingNodes.clear();
 		HolderLookup<SkillTree> holderLookup = this.registryAccess.lookupOrThrow(SkillTree.SKILL_TREE_REGISTRY_KEY);
 		
 		for (String treeId : compound.getAllKeys()) {
@@ -866,7 +867,20 @@ public class SkillTreeProgression {
 				} catch (IllegalArgumentException e) {
 				}
 			}
-			
+
+			if (treeCompound.contains("achieved", Tag.TAG_LIST)) {
+				ListTag listTag = treeCompound.getList("achieved", Tag.TAG_STRING);
+
+				for (Tag tag : listTag) {
+					Skill skill = SkillManager.getSkill(tag.getAsString());
+
+					Map<Skill, TopDownTreeNode> achievedNodes = this.achievedNodes.get(skilltree);
+					if (this.nodes.get(skilltree).containsKey(skill)) {
+						achievedNodes.put(skill, this.nodes.get(skilltree).get(skill));
+					}
+				}
+			}
+
 			if (treeCompound.contains("nodes", Tag.TAG_LIST)) {
 				ListTag unlockedSkills = treeCompound.getList("nodes", Tag.TAG_COMPOUND);
 				
@@ -884,17 +898,6 @@ public class SkillTreeProgression {
 						this.deserializeRecursively(skilltree, skill, treeRootNodes.get(skill), nodeCompound, true);
 					}
 				});
-			}
-			
-			if (treeCompound.contains("achieved", Tag.TAG_LIST)) {
-				ListTag listTag = treeCompound.getList("achieved", Tag.TAG_STRING);
-				
-				for (Tag tag : listTag) {
-					Skill skill = SkillManager.getSkill(tag.getAsString());
-					
-					Map<Skill, TopDownTreeNode> achievedNodes = this.achievedNodes.get(skilltree);
-					if (this.nodes.get(skilltree).containsKey(skill)) achievedNodes.put(skill, this.nodes.get(skilltree).get(skill));
-				}
 			}
 		}
 	}
