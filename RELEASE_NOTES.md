@@ -1,6 +1,13 @@
 # Epic Fight: Skill Tree in Minecraft 1.20.1 Changelog
 # Changelog on publishing websites and Discord will be parsed between version header ([x.x.x] - yyyy-mm-dd) and (For Devs) section
 
+## [20.2.8] - 2026-07-03
+
+### Fixed
+
+- Fixed resetting skill trees not locking "unlockable" nodes
+- Fixed conditional nodes not unlocked even tho meets them until you join again 
+
 ## [20.2.7] - 2026-04-13
 
 ### Fixed
