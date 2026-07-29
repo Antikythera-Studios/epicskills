@@ -23,7 +23,9 @@ public interface EpicSkillsClientBoundPayloadHandler {
 		context.player().getExistingData(EpicSkillsAttachmentTypes.ABILITY_POINTS).ifPresent(abilityPoint -> {
 			abilityPoint.setAbilityPoints(data.abilityPoint());
 			abilityPoint.setRequiredExp(data.requiredExp());
-			context.player().giveExperiencePoints(-abilityPoint.getRequiredExp());
+			if (data.success()) {
+            	context.player().giveExperiencePoints(-abilityPoint.getRequiredExp());
+        	}
 		});
 	}
 	
