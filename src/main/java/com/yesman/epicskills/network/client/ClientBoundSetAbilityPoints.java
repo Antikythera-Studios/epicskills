@@ -29,9 +29,12 @@ public record ClientBoundSetAbilityPoints(boolean success, int abilityPoint, int
 			}
 			
 			NetworkManager.getPlayerInClient().getCapability(AbilityPoints.ABILITY_POINTS).ifPresent(abilityPoint -> {
+				int oldRequiredExp = abilityPoint.getRequiredExp();
 				abilityPoint.setAbilityPoints(msg.abilityPoint());
 				abilityPoint.setRequiredExp(msg.requiredExp());
-				NetworkManager.getPlayerInClient().giveExperiencePoints(-abilityPoint.getRequiredExp());
+				if (msg.success()) {
+                	NetworkManager.getPlayerInClient().giveExperiencePoints(-oldRequiredExp);
+            	}
 			});
 		});
 		
