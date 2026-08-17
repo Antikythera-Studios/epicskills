@@ -1,6 +1,12 @@
 # Epic Fight: Skill Tree in Minecraft 1.20.1 Changelog
 # Changelog on publishing websites and Discord will be parsed between version header ([x.x.x] - yyyy-mm-dd) and (For Devs) section
 
+## [20.2.9] - 2026-08-17
+
+### Fixed
+
+- Fixed skills not unequipped when reset a skill tree
+
 ## [20.2.8] - 2026-07-03
 
 ### Fixed

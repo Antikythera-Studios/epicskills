@@ -1,18 +1,5 @@
 package com.yesman.epicskills.world.capability;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
 import com.mojang.datafixers.util.Pair;
 import com.yesman.epicskills.EpicSkills;
 import com.yesman.epicskills.client.gui.components.toasts.SkillTreeNodeToast;
@@ -27,15 +14,10 @@ import com.yesman.epicskills.registry.entry.EpicSkillsSkillTrees;
 import com.yesman.epicskills.skilltree.SkillTree;
 import com.yesman.epicskills.skilltree.SkillTreeEntry;
 import com.yesman.epicskills.skilltree.SkillTreeEntry.Node;
-
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
-import net.minecraft.core.Direction;
-import net.minecraft.core.Holder;
+import net.minecraft.core.*;
 import net.minecraft.core.Holder.Reference;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.core.Registry;
-import net.minecraft.core.RegistryAccess;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
@@ -50,19 +32,21 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.capabilities.CapabilityManager;
-import net.minecraftforge.common.capabilities.CapabilityToken;
-import net.minecraftforge.common.capabilities.ICapabilityProvider;
-import net.minecraftforge.common.capabilities.ICapabilitySerializable;
+import net.minecraftforge.common.capabilities.*;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
-import reascer.wom.gameasset.WOMSkills;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import yesman.epicfight.api.data.reloader.SkillManager;
 import yesman.epicfight.api.utils.ParseUtil;
+import yesman.epicfight.network.EpicFightNetworkManager;
+import yesman.epicfight.network.server.SPClearSkills;
+import yesman.epicfight.network.server.SPRemoveSkillAndLearn;
 import yesman.epicfight.skill.Skill;
 import yesman.epicfight.world.capabilities.EpicFightCapabilities;
 import yesman.epicfight.world.capabilities.entitypatch.player.PlayerPatch;
+
+import java.util.*;
 
 public class SkillTreeProgression {
 	public static final Capability<SkillTreeProgression> SKILL_TREE_PROGRESSION = CapabilityManager.get(new CapabilityToken<> () {});
@@ -222,10 +206,20 @@ public class SkillTreeProgression {
 			for (TopDownTreeNode rootNode : pageRootNodes.values()) {
 				// Propagate root node state to child
 				switch (rootNode.nodeState()) {
-					case UNLOCKABLE, UNLOCKED -> rootNode.setNodeState(NodeState.UNLOCKABLE, true, unequipSkills);
-					case LOCKED -> rootNode.setNodeState(NodeState.LOCKED, true, unequipSkills);
+					case UNLOCKABLE, UNLOCKED -> rootNode.setNodeState(NodeState.UNLOCKABLE, true, false); // Unequip is done at once below
+					case LOCKED -> rootNode.setNodeState(NodeState.LOCKED, true, false); // Unequip is done at once below
 				}
 			}
+		}
+
+		// Finally, reset the skill tree
+		if (unequipSkills && !player.level().isClientSide()) {
+			EpicFightCapabilities.getPlayerPatchAsOptional(player).ifPresent(playerPatch -> {
+				playerPatch.getSkillCapability().clearContainersAndLearnedSkills(true);
+				SPClearSkills clearpacket = new SPClearSkills(player.getId());
+				EpicFightNetworkManager.sendToPlayer(clearpacket, (ServerPlayer)player);
+				EpicFightNetworkManager.sendToAllPlayerTrackingThisEntity(clearpacket, player);
+			});
 		}
 
         if (allocatedPoints > 0) {
@@ -258,6 +252,11 @@ public class SkillTreeProgression {
 		});
 
 		this.unlockAwaitingNodes.removeIf(pair -> {
+			if (pair.getSecond().nodeInfo().unlockCondition() == null) {
+				// Remove invalid nodes that is registered without unlock condition
+				return true;
+			}
+
 			boolean meets = pair.getSecond().nodeInfo().unlockCondition().matches(serverplayer, serverplayer);
 
 			if (meets) {
@@ -588,7 +587,7 @@ public class SkillTreeProgression {
 		}
 		
 		@Override
-		public void setNodeState(NodeState nodeState, boolean propagateState, boolean modifyEquip) {
+		public void setNodeState(NodeState nodeState, boolean propagateState, boolean unequipIfLocked) {
 			if (nodeState == this.nodeState) {
 				return;
 			}
@@ -596,7 +595,7 @@ public class SkillTreeProgression {
 			if (propagateState && nodeState == NodeState.UNLOCKED) {
 				this.parents().forEach(parentNode -> {
 					if (parentNode.nodeState() == NodeState.UNLOCKABLE || parentNode.nodeState() == NodeState.LOCKED) {
-						parentNode.setNodeState(NodeState.UNLOCKED, true, modifyEquip);
+						parentNode.setNodeState(NodeState.UNLOCKED, true, unequipIfLocked);
 					}
 				});
 			}
@@ -623,18 +622,30 @@ public class SkillTreeProgression {
 				} else {
 					this.nodeState = NodeState.LOCKED;
 				}
-				
-				if (modifyEquip) {
-					EpicFightCapabilities.<Player, PlayerPatch<Player>>getParameterizedEntityPatch(player, Player.class, PlayerPatch.class).ifPresent(playerptach -> {
-						playerptach.getSkillContainerFor(this.nodeInfo().skill()).ifPresent(container -> {
-							container.setSkill(null);
-						});
-					});
-				}
 			} else {
 				this.nodeState = nodeState;
 			}
-			
+
+			if ((nodeState == NodeState.LOCKED || nodeState == NodeState.UNLOCKABLE) && unequipIfLocked) {
+				EpicFightCapabilities.<Player, PlayerPatch<Player>>getParameterizedEntityPatch(player, Player.class, PlayerPatch.class).ifPresent(playerptach -> {
+					playerptach.getSkillContainerFor(this.nodeInfo().skill()).ifPresent(container -> {
+						EpicSkills.LOGGER.info("Removing {} ...", nodeInfo.skill().getRegistryName());
+						container.setSkill(null);
+
+						// Sync in server
+						if (player instanceof ServerPlayer serverPlayer) {
+							boolean succeeded = playerptach.getSkillCapability().removeLearnedSkill(this.nodeInfo().skill());
+							EpicSkills.LOGGER.info("Removing {} from skill vault, result: {}", this.nodeInfo().skill(), succeeded);
+
+							EpicSkills.LOGGER.info("Sending remove packet... slot: {}, skill: {}", container.getSlot(), this.nodeInfo().skill());
+
+							EpicFightNetworkManager.sendToPlayer(new SPRemoveSkillAndLearn(container.getSlot(), this.nodeInfo().skill()), serverPlayer);
+							EpicFightNetworkManager.sendToAllPlayerTrackingThisEntity(container.createSyncPacketToRemotePlayer(), serverPlayer);
+						}
+					});
+				});
+			}
+
 			if (propagateState) {
 				switch (nodeState) {
 				case LOCKED -> {
@@ -649,15 +660,15 @@ public class SkillTreeProgression {
 						
 						if (parentAllUnlocked) {
 							if (childNode.nodeInfo().noUnlockConditions() || SkillTreeProgression.this.achievedNodes.get(childNode.belongedSkillTree).containsKey(childNode.nodeInfo.skill())) {
-								childNode.setNodeState(NodeState.UNLOCKABLE, true, modifyEquip);
+								childNode.setNodeState(NodeState.UNLOCKABLE, true, unequipIfLocked);
 							} else {
-								childNode.setNodeState(NodeState.LOCKED, true, modifyEquip);
+								childNode.setNodeState(NodeState.LOCKED, true, unequipIfLocked);
 								if (!this.nodeInfo.hasCustomUnlockCondition() && !isPendingToUnlockConditionalNode(childNode.belongedSkillTree, childNode.nodeInfo().skill()) && !achievedNodes.get(belongedSkillTree).containsKey(childNode.nodeInfo.skill())) {
 									SkillTreeProgression.this.unlockAwaitingNodes.add(Pair.of(childNode.belongedSkillTree, childNode));
 								}
 							}
 						} else {
-							childNode.setNodeState(NodeState.LOCKED, true, modifyEquip);
+							childNode.setNodeState(NodeState.LOCKED, true, unequipIfLocked);
 						}
 					});
 				}
@@ -673,7 +684,7 @@ public class SkillTreeProgression {
 
 						if (parentAllUnlocked) {
 							if (childNode.nodeInfo.noUnlockConditions() || SkillTreeProgression.this.achievedNodes.get(childNode.belongedSkillTree).containsKey(childNode.nodeInfo.skill())) {
-								childNode.setNodeState(NodeState.UNLOCKABLE, true, modifyEquip);
+								childNode.setNodeState(NodeState.UNLOCKABLE, true, unequipIfLocked);
 							} else if (!this.nodeInfo.hasCustomUnlockCondition() && !isPendingToUnlockConditionalNode(childNode.belongedSkillTree, childNode.nodeInfo().skill()) && !achievedNodes.get(belongedSkillTree).containsKey(childNode.nodeInfo.skill())) {
 								SkillTreeProgression.this.unlockAwaitingNodes.add(Pair.of(childNode.belongedSkillTree, childNode));
 							}
@@ -683,13 +694,13 @@ public class SkillTreeProgression {
 				case UNLOCKABLE -> {
 					this.parents().forEach(parentNode -> {
 						if (parentNode.nodeState() != NodeState.UNLOCKED) {
-							parentNode.setNodeState(NodeState.UNLOCKED, true, modifyEquip);
+							parentNode.setNodeState(NodeState.UNLOCKED, true, unequipIfLocked);
 						}
 					});
 					
 					this.children().forEach(childNode -> {
 						if (childNode.nodeState() != NodeState.LOCKED) {
-							childNode.setNodeState(NodeState.LOCKED, true, modifyEquip);
+							childNode.setNodeState(NodeState.LOCKED, true, unequipIfLocked);
 						}
 					});
 				}
@@ -917,7 +928,7 @@ public class SkillTreeProgression {
 		private final LazyOptional<SkillTreeProgression> lazyOptional;
 		private final SkillTreeProgression skillTreeProgression;
 		
-		public Provider(@NonNull SkillTreeProgression skillTreeProgression) {
+		public Provider(@NotNull SkillTreeProgression skillTreeProgression) {
 			this.lazyOptional = LazyOptional.of(() -> skillTreeProgression);
 			this.skillTreeProgression = skillTreeProgression;
 		}
